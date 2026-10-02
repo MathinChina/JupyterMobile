@@ -20,16 +20,6 @@ class DonateConfig {
   static const String bilibiliUrl =
       'https://space.bilibili.com/1854424625';
 
-  /// 微信赞赏码图片（asset 路径）。
-  ///
-  /// 把图片放到 `assets/images/donate/wechat_qr.png`。
-  static const String wechatQrAsset = 'assets/images/donate/wechat_qr.png';
-
-  /// 支付宝收款码图片（asset 路径）。
-  ///
-  /// 把图片放到 `assets/images/donate/alipay_qr.jpg`。
-  static const String alipayQrAsset = 'assets/images/donate/alipay_qr.jpg';
-
   /// 未配置链接时的占位提示（判断依据）。
   static bool get isBuyMeACoffeeConfigured =>
       !buyMeACoffeeUrl.contains('YOUR_USERNAME');

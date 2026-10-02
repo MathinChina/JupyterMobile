@@ -662,30 +662,6 @@ abstract class AppLocalizations {
   /// **'尚未配置链接（见 lib/core/donate_config.dart）'**
   String get donateNotConfigured;
 
-  /// No description provided for @donateScan.
-  ///
-  /// In zh, this message translates to:
-  /// **'扫码赞助'**
-  String get donateScan;
-
-  /// No description provided for @donateWechat.
-  ///
-  /// In zh, this message translates to:
-  /// **'微信赞赏'**
-  String get donateWechat;
-
-  /// No description provided for @donateAlipay.
-  ///
-  /// In zh, this message translates to:
-  /// **'支付宝收款'**
-  String get donateAlipay;
-
-  /// No description provided for @donatePlaceholder.
-  ///
-  /// In zh, this message translates to:
-  /// **'待添加\n收款码'**
-  String get donatePlaceholder;
-
   /// No description provided for @donateLinkFailed.
   ///
   /// In zh, this message translates to:

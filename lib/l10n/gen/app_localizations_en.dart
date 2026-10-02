@@ -306,18 +306,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Link not configured yet (see lib/core/donate_config.dart)';
 
   @override
-  String get donateScan => 'Scan to donate';
-
-  @override
-  String get donateWechat => 'WeChat reward';
-
-  @override
-  String get donateAlipay => 'Alipay';
-
-  @override
-  String get donatePlaceholder => 'QR code\ncoming soon';
-
-  @override
   String donateLinkFailed(Object url) {
     return 'Cannot open link: $url';
   }

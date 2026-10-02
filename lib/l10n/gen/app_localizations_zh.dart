@@ -298,18 +298,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get donateNotConfigured => '尚未配置链接（见 lib/core/donate_config.dart）';
 
   @override
-  String get donateScan => '扫码赞助';
-
-  @override
-  String get donateWechat => '微信赞赏';
-
-  @override
-  String get donateAlipay => '支付宝收款';
-
-  @override
-  String get donatePlaceholder => '待添加\n收款码';
-
-  @override
   String donateLinkFailed(Object url) {
     return '无法打开链接：$url';
   }

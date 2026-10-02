@@ -6,12 +6,11 @@ import '../l10n/gen/app_localizations.dart';
 
 /// 赞助页面。
 ///
-/// 提供三种赞助方式：
+/// 提供两种赞助方式：
 /// - Buy Me a Coffee（点击跳转浏览器）
 /// - B站充电（点击跳转浏览器）
-/// - 微信 / 支付宝收款码（展示图片，扫码）
 ///
-/// 链接与图片路径集中在 [DonateConfig]，拿到真实信息后只需改那一个文件。
+/// 链接集中在 [DonateConfig]，拿到真实信息后只需改那一个文件。
 class DonatePage extends StatelessWidget {
   const DonatePage({super.key});
 
@@ -60,34 +59,7 @@ class DonatePage extends StatelessWidget {
             enabled: DonateConfig.isBilibiliConfigured,
             onTap: () => _openUrl(context, DonateConfig.bilibiliUrl),
           ),
-          const SizedBox(height: 24),
-          _sectionTitle(l10n.donateScan),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQr(
-                    context, l10n.donateWechat, DonateConfig.wechatQrAsset),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQr(
-                    context, l10n.donateAlipay, DonateConfig.alipayQrAsset),
-              ),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _sectionTitle(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.bold,
-        color: Colors.blueGrey,
       ),
     );
   }
@@ -112,38 +84,6 @@ class DonatePage extends StatelessWidget {
         enabled: enabled,
         onTap: enabled ? onTap : null,
       ),
-    );
-  }
-
-  Widget _buildQr(BuildContext context, String label, String assetPath) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AspectRatio(
-          aspectRatio: 1,
-          child: Card(
-            clipBehavior: Clip.antiAlias,
-            child: Image.asset(
-              assetPath,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    AppLocalizations.of(context).donatePlaceholder,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.blueGrey),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(label, textAlign: TextAlign.center),
-      ],
     );
   }
 }
