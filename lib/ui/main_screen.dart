@@ -1,16 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../core/kernel/kernel_connection.dart';
 import '../core/kernel/kernel_event.dart';
+import '../core/notebook/notebook.dart';
 import '../state/connection_providers.dart';
 
-/// 主界面：最小执行闭环——代码输入框 + 运行按钮 + 流式输出区。
+/// 主界面：notebook 渲染 / 编辑 / 执行。
 ///
 /// 阶段①（解析/渲染/编辑）与阶段②（代码执行）将在这里展开。
-/// 当前先跑通 execute 的端到端，后续再扩展 cell 列表与富媒体渲染。
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key, required this.connection});
 
@@ -20,97 +24,204 @@ class MainScreen extends ConsumerStatefulWidget {
   ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-enum _OutputKind { stdout, stderr, result, error, status }
-
-class _OutputLine {
-  const _OutputLine(this.kind, this.text);
-  final _OutputKind kind;
-  final String text;
-}
-
 class _MainScreenState extends ConsumerState<MainScreen> {
-  final _codeController = TextEditingController();
-  final List<_OutputLine> _output = [];
-  final ScrollController _scrollController = ScrollController();
+  NotebookDocument _doc = NotebookDocument.empty();
+  final TextEditingController _editController = TextEditingController();
 
   StreamSubscription<KernelEvent>? _execSub;
-  bool _running = false;
+  int? _editingIndex;
+  int? _runningIndex;
+  String _fileName = '未命名.ipynb';
+
+  @override
+  void initState() {
+    super.initState();
+    _doc.cells.add(MarkdownCell(
+      id: notebookNewId(),
+      metadata: const {},
+      source: '# 新 Notebook\n\n点击单元格编辑，运行代码单元执行 Python。',
+    ));
+  }
 
   @override
   void dispose() {
     _execSub?.cancel();
-    _codeController.dispose();
-    _scrollController.dispose();
+    _editController.dispose();
     super.dispose();
   }
 
-  void _addLine(_OutputLine line) {
-    setState(() => _output.add(line));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController
-            .jumpTo(_scrollController.position.maxScrollExtent);
+  // ---- 文件操作 ----
+
+  Future<void> _openFile() async {
+    final files = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['ipynb'],
+    );
+    if (files.isEmpty) return;
+    final file = files.first;
+    final bytes = await file.readAsBytes();
+    try {
+      final doc = NotebookDocument.parse(utf8.decode(bytes));
+      setState(() {
+        _doc = doc;
+        _fileName = file.name;
+        _editingIndex = null;
+      });
+    } catch (e) {
+      _showSnack('打开失败：$e');
+    }
+  }
+
+  Future<void> _saveFile() async {
+    final bytes = Uint8List.fromList(utf8.encode(_doc.encode()));
+    final uri = await FilePicker.saveFile(
+      fileName: _fileName,
+      bytes: bytes,
+      mimeType: 'application/x-ipynb+json',
+      type: FileType.custom,
+      allowedExtensions: const ['ipynb'],
+    );
+    if (uri != null) {
+      _fileName = uri.pathSegments.isNotEmpty
+          ? uri.pathSegments.last
+          : _fileName;
+      if (mounted) _showSnack('已保存');
+    }
+  }
+
+  void _newNotebook() {
+    setState(() {
+      _doc = NotebookDocument.empty();
+      _doc.cells.add(MarkdownCell(
+        id: notebookNewId(),
+        metadata: const {},
+        source: '# 新 Notebook',
+      ));
+      _fileName = '未命名.ipynb';
+      _editingIndex = null;
+    });
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ---- cell 操作 ----
+
+  void _addCodeCell() {
+    setState(() {
+      _doc.cells.add(CodeCell(
+        id: notebookNewId(),
+        metadata: const {},
+        source: '',
+      ));
+      _editingIndex = _doc.cells.length - 1;
+    });
+    _editController.text = '';
+  }
+
+  void _addMarkdownCell() {
+    setState(() {
+      _doc.cells.add(MarkdownCell(
+        id: notebookNewId(),
+        metadata: const {},
+        source: '',
+      ));
+      _editingIndex = _doc.cells.length - 1;
+    });
+    _editController.text = '';
+  }
+
+  void _deleteCell(int index) {
+    setState(() {
+      _doc.cells.removeAt(index);
+      if (_editingIndex == index) {
+        _editingIndex = null;
+      } else if (_editingIndex != null && _editingIndex! > index) {
+        _editingIndex = _editingIndex! - 1;
       }
     });
   }
 
-  Future<void> _run() async {
-    final code = _codeController.text;
-    if (code.trim().isEmpty || _running) return;
-    _addLine(_OutputLine(_OutputKind.status, 'In [*]: ${code.trim()}'));
-    setState(() => _running = true);
+  void _startEdit(int index) {
+    _editController.text = _doc.cells[index].source;
+    setState(() => _editingIndex = index);
+  }
 
-    _execSub = widget.connection.execute(code).listen(
+  void _finishEdit() {
+    final index = _editingIndex;
+    if (index != null && index < _doc.cells.length) {
+      _doc.cells[index].setSource(_editController.text);
+    }
+    setState(() => _editingIndex = null);
+  }
+
+  // ---- 执行 ----
+
+  void _runCell(int index) {
+    final cell = _doc.cells[index];
+    if (cell is! CodeCell || _runningIndex != null) return;
+    _execSub?.cancel();
+    cell.outputs.clear();
+    cell.executionCount = null;
+    setState(() => _runningIndex = index);
+
+    _execSub = widget.connection.execute(cell.source).listen(
       (event) {
+        if (!mounted) return;
         switch (event) {
           case KernelStatusEvent(:final status):
             if (status == 'idle') {
-              _addLine(const _OutputLine(_OutputKind.status, '完成'));
+              setState(() => _runningIndex = null);
             }
           case KernelStreamEvent(:final name, :final text):
-            _addLine(_OutputLine(
-              name == 'stderr' ? _OutputKind.stderr : _OutputKind.stdout,
-              text,
-            ));
-          case KernelExecuteResultEvent(:final data):
-            _addLine(_OutputLine(_OutputKind.result, _plainText(data)));
+            setState(() => cell.outputs.add(StreamOutput(name: name, text: text)));
           case KernelDisplayDataEvent(:final data):
-            _addLine(_OutputLine(_OutputKind.result, _plainText(data)));
+            setState(() => cell.outputs.add(DisplayDataOutput(data: data)));
+          case KernelExecuteResultEvent(:final data, :final executionCount):
+            setState(() {
+              cell.executionCount = executionCount;
+              cell.outputs.add(
+                ExecuteResultOutput(data: data, executionCount: executionCount),
+              );
+            });
           case KernelErrorEvent(:final ename, :final evalue, :final traceback):
-            _addLine(_OutputLine(
-              _OutputKind.error,
-              traceback.isEmpty ? '$ename: $evalue' : traceback.join('\n'),
-            ));
+            setState(() {
+              cell.outputs.add(
+                ErrorOutput(ename: ename, evalue: evalue, traceback: traceback),
+              );
+            });
         }
       },
       onError: (Object e) {
-        _addLine(_OutputLine(_OutputKind.error, e.toString()));
+        if (!mounted) return;
+        setState(() {
+          cell.outputs.add(ErrorOutput(
+            ename: 'ConnectionError',
+            evalue: e.toString(),
+            traceback: const [],
+          ));
+          _runningIndex = null;
+        });
       },
       onDone: () {
-        if (mounted) setState(() => _running = false);
+        if (mounted) setState(() => _runningIndex = null);
       },
     );
   }
 
-  String _plainText(Map<String, dynamic> data) {
-    if (data.containsKey('text/plain')) return data['text/plain'].toString();
-    // 非纯文本结果：给出可读的键提示。
-    final keys = data.keys.where((k) => k.startsWith('text/'));
-    if (keys.isNotEmpty) return data[keys.first].toString();
-    return data.toString();
+  void _interrupt() {
+    widget.connection.interrupt();
   }
 
   Future<void> _restart() async {
     try {
       await widget.connection.restart();
-      _output.clear();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('内核已重启')),
-        );
+        _showSnack('内核已重启');
       }
     } catch (e) {
-      _addLine(_OutputLine(_OutputKind.error, e.toString()));
+      if (mounted) _showSnack('重启失败：$e');
     }
   }
 
@@ -128,43 +239,58 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final baseUrl = widget.connection.config.baseUrl;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('JupyterMobile'),
+        title: Text(
+          _fileName,
+          style: const TextStyle(fontSize: 16),
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           IconButton(
-            tooltip: '重启内核',
-            icon: const Icon(Icons.refresh),
-            onPressed: _restart,
+            tooltip: '打开',
+            icon: const Icon(Icons.folder_open),
+            onPressed: _openFile,
           ),
           IconButton(
-            tooltip: '中断执行',
-            icon: const Icon(Icons.stop_circle_outlined),
-            onPressed: _running
-                ? () => widget.connection.interrupt()
-                : null,
+            tooltip: '保存',
+            icon: const Icon(Icons.save_outlined),
+            onPressed: _saveFile,
           ),
-          IconButton(
-            tooltip: '断开连接',
-            icon: const Icon(Icons.power_settings_new),
-            onPressed: _disconnect,
+          PopupMenuButton<String>(
+            onSelected: (v) {
+              switch (v) {
+                case 'new':
+                  _newNotebook();
+                case 'restart':
+                  _restart();
+                case 'disconnect':
+                  _disconnect();
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'new', child: Text('新建')),
+              PopupMenuItem(value: 'restart', child: Text('重启内核')),
+              PopupMenuItem(value: 'disconnect', child: Text('断开连接')),
+            ],
           ),
         ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          Container(
+            color: Colors.grey.shade50,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
                 Icon(
-                  _running ? Icons.circle : Icons.check_circle,
-                  size: 14,
-                  color: _running ? Colors.amber : Colors.green,
+                  _runningIndex != null ? Icons.circle : Icons.check_circle,
+                  size: 13,
+                  color: _runningIndex != null ? Colors.amber : Colors.green,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     baseUrl,
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -173,95 +299,257 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: _output.isEmpty
-                ? Center(
-                    child: Text(
-                      '输入代码并点击运行，输出将显示在这里',
-                      style: TextStyle(color: Colors.grey.shade500),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _output.length,
-                    itemBuilder: (context, i) => _buildOutputLine(_output[i]),
-                  ),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _doc.cells.length,
+              itemBuilder: (context, i) => _buildCell(_doc.cells[i], i),
+            ),
           ),
           const Divider(height: 1),
-          _buildInputBar(),
+          _buildToolbar(),
         ],
       ),
     );
   }
 
-  Widget _buildOutputLine(_OutputLine line) {
-    Color color;
-    FontStyle style = FontStyle.normal;
-    switch (line.kind) {
-      case _OutputKind.stdout:
-      case _OutputKind.result:
-        color = Colors.black87;
-      case _OutputKind.stderr:
-      case _OutputKind.error:
-        color = Colors.red.shade700;
-      case _OutputKind.status:
-        color = Colors.grey.shade500;
-        style = FontStyle.italic;
-    }
-    final mono = line.kind == _OutputKind.stdout ||
-        line.kind == _OutputKind.stderr ||
-        line.kind == _OutputKind.error;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: SelectableText(
-        line.text,
-        style: TextStyle(
-          color: color,
-          fontStyle: style,
-          fontFamily: mono ? 'monospace' : null,
-          fontSize: mono ? 13 : 14,
+  Widget _buildToolbar() {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addCodeCell,
+                icon: const Icon(Icons.code, size: 18),
+                label: const Text('代码'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _addMarkdownCell,
+                icon: const Icon(Icons.text_fields, size: 18),
+                label: const Text('Markdown'),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildInputBar() {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _codeController,
-              minLines: 3,
-              maxLines: 8,
-              keyboardType: TextInputType.multiline,
-              decoration: InputDecoration(
-                hintText: '输入 Python 代码，例如 print("hello")',
-                border: const OutlineInputBorder(),
-                isDense: true,
-                suffixIcon: IconButton(
-                  tooltip: '运行',
-                  icon: Icon(
-                    _running ? Icons.hourglass_top : Icons.play_arrow,
-                    color: Colors.green,
-                  ),
-                  onPressed: _running ? null : _run,
+  Widget _buildCell(NotebookCell cell, int index) {
+    final isEditing = _editingIndex == index;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCellHeader(cell, index),
+          const Divider(height: 1),
+          if (isEditing)
+            _buildCellEditor(cell)
+          else
+            _buildCellBody(cell, index),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCellHeader(NotebookCell cell, int index) {
+    final isCode = cell is CodeCell;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Row(
+        children: [
+          Text(
+            isCode ? '代码' : 'Markdown',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (cell is CodeCell && cell.executionCount != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                'In [${cell.executionCount}]',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ),
+          const Spacer(),
+          if (isCode)
+            IconButton(
+              tooltip: _runningIndex == index ? '中断' : '运行',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                _runningIndex == index
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_arrow,
+                size: 20,
+                color: Colors.green,
+              ),
+              onPressed: () =>
+                  _runningIndex == index ? _interrupt() : _runCell(index),
+            ),
+          IconButton(
+            tooltip: '删除',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.delete_outline, size: 20),
+            onPressed: () => _deleteCell(index),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCellBody(NotebookCell cell, int index) {
+    if (cell is MarkdownCell) {
+      return InkWell(
+        onTap: () => _startEdit(index),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: cell.source.trim().isEmpty
+              ? Text('（空 Markdown，点击编辑）',
+                  style: TextStyle(color: Colors.grey.shade400))
+              : MarkdownBody(data: cell.source),
+        ),
+      );
+    }
+    if (cell is CodeCell) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => _startEdit(index),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              child: SelectableText(
+                cell.source.isEmpty ? '（点击输入代码）' : cell.source,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                  color: cell.source.isEmpty
+                      ? Colors.grey.shade400
+                      : Colors.black87,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _running ? null : _run,
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('运行'),
+          ),
+          if (cell.outputs.isNotEmpty) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final output in cell.outputs) _renderOutput(output),
+                ],
               ),
             ),
           ],
+        ],
+      );
+    }
+    // RawCell
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Text(cell.source, style: const TextStyle(fontFamily: 'monospace')),
+    );
+  }
+
+  Widget _buildCellEditor(NotebookCell cell) {
+    final isCode = cell is CodeCell;
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _editController,
+            minLines: isCode ? 4 : 2,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            style: TextStyle(
+              fontFamily: isCode ? 'monospace' : null,
+              fontSize: 13,
+            ),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _finishEdit,
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('完成'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _renderOutput(CellOutput output) {
+    switch (output) {
+      case StreamOutput(:final name, :final text):
+        return _monoText(
+          text,
+          color: name == 'stderr' ? Colors.red.shade700 : Colors.black87,
+        );
+      case ExecuteResultOutput(:final data, :final executionCount):
+        return _renderData(data, prefix: 'Out[$executionCount]: ');
+      case DisplayDataOutput(:final data):
+        return _renderData(data);
+      case ErrorOutput(:final ename, :final evalue, :final traceback):
+        return _monoText(
+          traceback.isEmpty ? '$ename: $evalue' : traceback.join('\n'),
+          color: Colors.red.shade700,
+        );
+    }
+  }
+
+  Widget _renderData(Map<String, dynamic> data, {String? prefix}) {
+    if (data.containsKey('image/png')) {
+      try {
+        return Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 4),
+          child: Image.memory(base64Decode(data['image/png'].toString())),
+        );
+      } catch (_) {
+        // base64 解码失败则回退到文本。
+      }
+    }
+    final text = _pickText(data);
+    return _monoText(prefix == null ? text : '$prefix$text');
+  }
+
+  String _pickText(Map<String, dynamic> data) {
+    for (final key in const ['text/plain', 'text/markdown', 'text/html']) {
+      final value = data[key];
+      if (value != null && value.toString().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return data.toString();
+  }
+
+  Widget _monoText(String text, {Color color = Colors.black87}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: SelectableText(
+        text.isEmpty ? ' ' : text,
+        style: TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 13,
+          color: color,
         ),
       ),
     );
