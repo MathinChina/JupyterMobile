@@ -6,6 +6,7 @@ import 'package:jupyter_mobile/core/kernel/kernel_connection.dart';
 import 'package:jupyter_mobile/core/kernel/kernel_connection_config.dart';
 import 'package:jupyter_mobile/core/kernel/kernel_event.dart';
 import 'package:jupyter_mobile/core/kernel/kernel_source.dart';
+import 'package:jupyter_mobile/l10n/gen/app_localizations.dart';
 import 'package:jupyter_mobile/ui/main_screen.dart';
 
 class _FakeConnection implements KernelConnection {
@@ -42,6 +43,20 @@ class _FakeConnection implements KernelConnection {
   Stream<KernelStatusEvent> get statusStream => const Stream.empty();
 }
 
+/// 记录 execute 调用并返回受控流式事件的连接，用于扩展管理测试。
+class _StreamingConnection extends _FakeConnection {
+  _StreamingConnection(this.stream);
+
+  final Stream<KernelEvent> stream;
+  final List<String> executedCodes = [];
+
+  @override
+  Stream<KernelEvent> execute(String code) {
+    executedCodes.add(code);
+    return stream;
+  }
+}
+
 void main() {
   testWidgets('主界面 notebook 渲染 + 添加代码单元 smoke test',
       (WidgetTester tester) async {
@@ -51,7 +66,12 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(home: MainScreen(connection: _FakeConnection())),
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainScreen(connection: _FakeConnection()),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -70,5 +90,125 @@ void main() {
 
     // 新增 code cell 后出现运行按钮（play_arrow）。
     expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+  });
+
+  testWidgets('重命名 notebook 文件名', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainScreen(connection: _FakeConnection()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始标题为本地化默认名。
+    expect(find.text('未命名.ipynb'), findsOneWidget);
+
+    // 点击标题打开重命名对话框。
+    await tester.tap(find.text('未命名.ipynb'));
+    await tester.pumpAndSettle();
+    expect(find.text('重命名 Notebook'), findsOneWidget);
+
+    // 输入不带后缀的名字，确定后自动补 .ipynb。
+    await tester.enterText(find.byType(TextField), '分析');
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('分析.ipynb'), findsOneWidget);
+  });
+
+  testWidgets('扩展管理：pip 包安装流式显示输出', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    final conn = _StreamingConnection(
+      Stream.fromIterable(const [
+        KernelStreamEvent('stdout', 'Collecting numpy\n'),
+        KernelStreamEvent('stdout', 'Successfully installed numpy\n'),
+      ]),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainScreen(connection: conn),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 打开菜单 → 扩展管理。
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('扩展管理'));
+    await tester.pumpAndSettle();
+    expect(find.text('安装 Python 包'), findsOneWidget);
+
+    // 输入包名并安装。
+    await tester.enterText(find.byType(TextField), 'numpy');
+    await tester.tap(find.text('安装'));
+    await tester.pump();
+
+    // 验证 execute 收到 pip install 命令。
+    expect(conn.executedCodes, hasLength(1));
+    expect(conn.executedCodes.single, contains('pip install'));
+    expect(conn.executedCodes.single, contains('numpy'));
+
+    // 流式输出被追加显示。
+    expect(find.textContaining('Successfully installed numpy'), findsOneWidget);
+  });
+
+  testWidgets('代码 cell 折叠/展开', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainScreen(connection: _FakeConnection()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始 1 个 markdown cell（默认），1 个折叠按钮（expand_less）。
+    expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+    // 添加一个 code cell。
+    await tester.tap(find.widgetWithText(OutlinedButton, '代码'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.expand_less), findsNWidgets(2));
+
+    // 新 code cell 处于编辑态，点「完成」结束编辑，回到源码显示态。
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+    expect(find.text('（点击输入代码）'), findsOneWidget);
+
+    // 折叠第二个（code）cell：其源码提示应隐藏。
+    await tester.tap(find.byIcon(Icons.expand_less).at(1));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    expect(find.text('（点击输入代码）'), findsNothing);
+
+    // 展开后源码提示恢复。
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pumpAndSettle();
+    expect(find.text('（点击输入代码）'), findsOneWidget);
   });
 }

@@ -1,0 +1,128 @@
+{
+  "@@locale": "en",
+  "appTitle": "JupyterMobile",
+  "appSubtitle": "Connect to an external Jupyter kernel and start your notebook",
+
+  "kernelSource": "Kernel source",
+  "sourceRemote": "Remote server",
+  "sourceExternal": "Local Termux",
+  "sourceBundled": "Bundled Python",
+  "bundledComingSoon": "Bundled Python coming soon (phase 6)",
+
+  "serverAddress": "Server address",
+  "serverAddressHint": "e.g. 192.168.1.100 or example.com",
+  "port": "Port",
+  "portHint": "Default 8888",
+  "token": "Token",
+  "tokenHint": "IdentityProvider.token of jupyter_server",
+  "generateToken": "Generate",
+
+  "termuxDeploy": "Termux service setup",
+  "termuxDeploySubtitle": "Separate config from commands: write config once, then start/stop",
+  "configDir": "Config directory",
+  "privateDir": "Termux private dir (~/.jupyter)",
+  "privateDirDesc": "Only Termux can access it",
+  "sharedDir": "Shared dir (/sdcard/JupyterMobile)",
+  "sharedDirDesc": "Accessible by file manager / Shizuku (recommended)",
+  "stepInstall": "① Install (skip if already installed)",
+  "stepConfig": "② Write config (once)",
+  "stepStart": "③ Start service",
+  "stepStop": "④ Stop service",
+  "copy": "Copy",
+  "copied": "Copied to clipboard",
+
+  "autoConnect": "Auto connect",
+  "autoConnectDesc": "Connect using last config on next launch",
+  "connect": "Connect",
+
+  "untitled": "Untitled.ipynb",
+  "renameNotebook": "Rename notebook",
+  "fileName": "File name",
+  "fileNameHint": "e.g. analysis.ipynb",
+  "cancel": "Cancel",
+  "ok": "OK",
+  "open": "Open",
+  "save": "Save",
+  "newNotebook": "New",
+  "restartKernel": "Restart kernel",
+  "disconnect": "Disconnect",
+  "saved": "Saved",
+  "openFailed": "Open failed: {error}",
+  "@openFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "kernelRestarted": "Kernel restarted",
+  "restartFailed": "Restart failed: {error}",
+  "@restartFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "code": "Code",
+  "markdown": "Markdown",
+  "moveUp": "Move up",
+  "moveDown": "Move down",
+  "delete": "Delete",
+  "collapse": "Collapse",
+  "expand": "Expand",
+  "interrupt": "Interrupt",
+  "run": "Run",
+  "emptyMarkdown": "(Empty Markdown, tap to edit)",
+  "tapToCode": "(Tap to enter code)",
+  "edit": "Edit",
+  "preview": "Preview",
+  "done": "Done",
+
+  "imageUnavailable": "(Image cannot be displayed)",
+  "imageInvalid": "(Invalid image data)",
+
+  "newNotebookContent": "# New Notebook\n\nTap a cell to edit, run a code cell to execute Python.",
+
+  "language": "Language",
+  "languageSystem": "System default",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "settings": "Settings",
+
+  "extensions": "Extensions",
+  "extensionPipTitle": "Install Python package",
+  "extensionPackageHint": "e.g. numpy, pandas, requests",
+  "extensionInstall": "Install",
+  "extensionInstalling": "Installing…",
+  "extensionOutput": "Output",
+  "extensionOutputEmpty": "Install output will appear here",
+  "extensionSuccess": "Installation finished",
+  "extensionFailed": "Install failed: {error}",
+  "@extensionFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "extensionServerTitle": "Front-end extensions (nbextension / labextension)",
+  "extensionServerDesc": "Server-level extensions, run in Termux",
+  "stepNbextension": "⑤ Install nbextension (front-end extension)",
+  "stepLabextension": "⑥ Install labextension (front-end extension)",
+  "extensionReplaceName": "Replace <name> with the extension name",
+
+  "donate": "Donate",
+  "donateTitle": "Support",
+  "donateIntro": "If this tool helps you, consider buying the author a coffee ☕",
+  "donateBuyMeACoffee": "Buy Me a Coffee",
+  "donateBilibili": "Bilibili charge",
+  "donateTapToOpen": "Open sponsor page",
+  "donateTapToCharge": "Open charging page",
+  "donateNotConfigured": "Link not configured yet (see lib/core/donate_config.dart)",
+  "donateScan": "Scan to donate",
+  "donateWechat": "WeChat reward",
+  "donateAlipay": "Alipay",
+  "donatePlaceholder": "QR code\ncoming soon",
+  "donateLinkFailed": "Cannot open link: {url}",
+  "@donateLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  }
+}

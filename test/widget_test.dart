@@ -7,7 +7,7 @@ import 'package:jupyter_mobile/main.dart';
 
 void main() {
   testWidgets('连接界面渲染 smoke test', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
 
     // 连接界面内容较高，用更高的视口让底部按钮完整可见。
     tester.view.physicalSize = const Size(1080, 2400);
@@ -23,5 +23,58 @@ void main() {
     expect(find.text('JupyterMobile'), findsWidgets);
     expect(find.text('内核来源'), findsOneWidget);
     expect(find.text('连接'), findsOneWidget);
+  });
+
+  testWidgets('赞助页：从连接界面进入并展示两张收款码', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
+
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      const ProviderScope(child: JupyterMobileApp()),
+    );
+    await tester.pumpAndSettle();
+
+    // 点击标题行右侧的赞助爱心按钮。
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
+
+    // 赞助页标题与文案。
+    expect(find.text('赞助支持'), findsOneWidget);
+    expect(find.text('扫码赞助'), findsOneWidget);
+    expect(find.text('微信赞赏'), findsOneWidget);
+    expect(find.text('支付宝收款'), findsOneWidget);
+
+    // 两张收款码图片（Image.asset）存在且资产可加载。
+    expect(find.byType(Image), findsNWidgets(2));
+  });
+
+  testWidgets('令牌可随机生成且非空', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
+
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      const ProviderScope(child: JupyterMobileApp()),
+    );
+    await tester.pumpAndSettle();
+
+    // 令牌输入框初始即填入随机令牌（32 位 hex）。
+    final tokenField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (w) => w is TextField && w.obscureText == true,
+      ),
+    );
+    expect(tokenField.controller!.text, isNotEmpty);
+    expect(tokenField.controller!.text.length, 32);
+
+    // 点击「随机生成」按钮后令牌仍为 32 位 hex。
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(tokenField.controller!.text.length, 32);
   });
 }

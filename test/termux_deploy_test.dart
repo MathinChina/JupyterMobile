@@ -51,4 +51,16 @@ void main() {
     expect(s, contains('jupyter server stop 8888'));
     expect(s, contains('pkill -f jupyter-notebook'));
   });
+
+  test('nbextensionScript 生成 install+enable 且用 --user', () {
+    final s = shared.nbextensionScript('jupyter_contrib_nbextensions');
+    expect(s, contains('jupyter nbextension install --user'));
+    expect(s, contains('jupyter nbextension enable --user'));
+    expect(s, contains('jupyter_contrib_nbextensions'));
+  });
+
+  test('labextensionScript 生成 install 命令', () {
+    final s = shared.labextensionScript('@jupyterlab/git');
+    expect(s, 'jupyter labextension install @jupyterlab/git');
+  });
 }

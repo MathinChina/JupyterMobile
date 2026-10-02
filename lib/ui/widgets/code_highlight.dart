@@ -39,7 +39,7 @@ class CodeHighlight {
       if (nodes == null) return _plain(code, baseColor, fontSize);
       return TextSpan(
         style: TextStyle(
-          fontFamily: 'monospace',
+          fontFamily: 'DejaVuSansMono',
           fontSize: fontSize,
           color: baseColor,
         ),
@@ -54,7 +54,7 @@ class CodeHighlight {
     return TextSpan(
       text: code,
       style: TextStyle(
-        fontFamily: 'monospace',
+        fontFamily: 'DejaVuSansMono',
         fontSize: fontSize,
         color: color,
       ),

@@ -1,0 +1,6 @@
+arb-dir: lib/l10n
+template-arb-file: app_zh.arb
+output-localization-file: app_localizations.dart
+nullable-getter: false
+# 生成到 lib/l10n/gen/ 下，避免与手写代码混杂。
+output-dir: lib/l10n/gen

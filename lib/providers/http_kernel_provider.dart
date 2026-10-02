@@ -64,7 +64,7 @@ abstract class HttpKernelProvider implements KernelConnection {
       rethrow;
     } catch (e) {
       await _teardown();
-      throw KernelConnectionException('连接失败：$e');
+      throw KernelConnectionException('Connection failed: $e');
     }
   }
 
@@ -73,10 +73,10 @@ abstract class HttpKernelProvider implements KernelConnection {
     final listResp =
         await http.get(_restUri('/api/kernels')).timeout(const Duration(seconds: 8));
     if (listResp.statusCode == 401 || listResp.statusCode == 403) {
-      throw const KernelConnectionException('认证失败：token 无效或缺失');
+      throw const KernelConnectionException('Authentication failed: invalid or missing token');
     }
     if (listResp.statusCode != 200) {
-      throw KernelConnectionException('无法获取内核列表 (HTTP ${listResp.statusCode})');
+      throw KernelConnectionException('Failed to list kernels (HTTP ${listResp.statusCode})');
     }
     final body = jsonDecode(listResp.body) as List<dynamic>;
     for (final k in body) {
@@ -94,9 +94,9 @@ abstract class HttpKernelProvider implements KernelConnection {
       return created['id'] as String;
     }
     if (createResp.statusCode == 401 || createResp.statusCode == 403) {
-      throw const KernelConnectionException('认证失败：token 无效或缺失');
+      throw const KernelConnectionException('Authentication failed: invalid or missing token');
     }
-    throw KernelConnectionException('无法启动内核 (HTTP ${createResp.statusCode})');
+    throw KernelConnectionException('Failed to start kernel (HTTP ${createResp.statusCode})');
   }
 
   /// 建立 WS 并等待 kernel_info 握手。
@@ -122,7 +122,7 @@ abstract class HttpKernelProvider implements KernelConnection {
     channel.sink.add(_protocol.encode('shell', info));
     await _infoCompleter!.future
         .timeout(const Duration(seconds: 15), onTimeout: () {
-      throw KernelConnectionException('内核握手超时（kernel_info 无响应）');
+      throw KernelConnectionException('Kernel handshake timed out (no kernel_info reply)');
     });
   }
 
@@ -146,7 +146,7 @@ abstract class HttpKernelProvider implements KernelConnection {
   void _onWsDone() {
     _connected = false;
     _statusController.add(const KernelStatusEvent('disconnected'));
-    _failAllPending(const KernelConnectionException('连接已断开'));
+    _failAllPending(const KernelConnectionException('Connection lost'));
   }
 
   void _handleIopub(DecodedMessage msg) {
@@ -229,7 +229,7 @@ abstract class HttpKernelProvider implements KernelConnection {
   void _send(String channel, Map<String, dynamic> message) {
     final ws = _channel;
     if (ws == null || !_connected) {
-      throw const KernelConnectionException('尚未连接到内核');
+      throw const KernelConnectionException('Not connected to a kernel');
     }
     ws.sink.add(_protocol.encode(channel, message));
   }
@@ -273,9 +273,9 @@ abstract class HttpKernelProvider implements KernelConnection {
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200 && resp.statusCode != 204) {
       if (resp.statusCode == 401 || resp.statusCode == 403) {
-        throw const KernelConnectionException('认证失败：token 无效或缺失');
+        throw const KernelConnectionException('Authentication failed: invalid or missing token');
       }
-      throw KernelConnectionException('重启失败 (HTTP ${resp.statusCode})');
+      throw KernelConnectionException('Restart failed (HTTP ${resp.statusCode})');
     }
   }
 
@@ -302,7 +302,7 @@ abstract class HttpKernelProvider implements KernelConnection {
 
   Future<void> _teardown() async {
     _connected = false;
-    _failAllPending(const KernelConnectionException('连接已关闭'));
+    _failAllPending(const KernelConnectionException('Connection closed'));
     await _wsSub?.cancel();
     await _channel?.sink.close();
     _wsSub = null;
