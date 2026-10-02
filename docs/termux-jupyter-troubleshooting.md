@@ -271,6 +271,21 @@ cd termux_science_setup && chmod +x termux_science_setup.sh && ./termux_science_
 
 ## 8. 启动与连接
 
+### 一键脚本（推荐）
+
+本项目根目录提供了 `jupytermobile.sh`，下载执行一次即可安装 `jm` /
+`jupytermobile` 命令，之后用 `jm config` 配置端口令牌、`jm start` 启动、
+`jm stop` 停止、`jm status` 查看状态、`jm log` 看日志：
+
+```bash
+bash jupytermobile.sh      # 安装命令
+source ~/.bashrc
+jm config --port 8888 --gen-token
+jm start
+```
+
+### 手动启动
+
 ### 启动命令
 
 ```bash
