@@ -24,4 +24,30 @@ void main() {
     expect(find.text('内核来源'), findsOneWidget);
     expect(find.text('连接'), findsOneWidget);
   });
+
+  testWidgets('赞助页：从连接界面进入并展示两张收款码', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
+
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      const ProviderScope(child: JupyterMobileApp()),
+    );
+    await tester.pumpAndSettle();
+
+    // 点击标题行右侧的赞助爱心按钮。
+    await tester.tap(find.byIcon(Icons.favorite));
+    await tester.pumpAndSettle();
+
+    // 赞助页标题与文案。
+    expect(find.text('赞助支持'), findsOneWidget);
+    expect(find.text('扫码赞助'), findsOneWidget);
+    expect(find.text('微信赞赏'), findsOneWidget);
+    expect(find.text('支付宝收款'), findsOneWidget);
+
+    // 两张收款码图片（Image.asset）存在且资产可加载。
+    expect(find.byType(Image), findsNWidgets(2));
+  });
 }

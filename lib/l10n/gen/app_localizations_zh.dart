@@ -248,4 +248,45 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get extensionReplaceName => '把 <name> 替换为扩展名';
+
+  @override
+  String get donate => '赞助';
+
+  @override
+  String get donateTitle => '赞助支持';
+
+  @override
+  String get donateIntro => '如果这个工具对你有帮助，欢迎请作者喝杯咖啡 ☕';
+
+  @override
+  String get donateBuyMeACoffee => 'Buy Me a Coffee';
+
+  @override
+  String get donateBilibili => 'B站充电';
+
+  @override
+  String get donateTapToOpen => '点击前往赞助页';
+
+  @override
+  String get donateTapToCharge => '点击前往充电页';
+
+  @override
+  String get donateNotConfigured => '尚未配置链接（见 lib/core/donate_config.dart）';
+
+  @override
+  String get donateScan => '扫码赞助';
+
+  @override
+  String get donateWechat => '微信赞赏';
+
+  @override
+  String get donateAlipay => '支付宝收款';
+
+  @override
+  String get donatePlaceholder => '待添加\n收款码';
+
+  @override
+  String donateLinkFailed(Object url) {
+    return '无法打开链接：$url';
+  }
 }

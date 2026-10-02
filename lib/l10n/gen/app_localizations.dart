@@ -565,6 +565,84 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'把 <name> 替换为扩展名'**
   String get extensionReplaceName;
+
+  /// No description provided for @donate.
+  ///
+  /// In zh, this message translates to:
+  /// **'赞助'**
+  String get donate;
+
+  /// No description provided for @donateTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'赞助支持'**
+  String get donateTitle;
+
+  /// No description provided for @donateIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'如果这个工具对你有帮助，欢迎请作者喝杯咖啡 ☕'**
+  String get donateIntro;
+
+  /// No description provided for @donateBuyMeACoffee.
+  ///
+  /// In zh, this message translates to:
+  /// **'Buy Me a Coffee'**
+  String get donateBuyMeACoffee;
+
+  /// No description provided for @donateBilibili.
+  ///
+  /// In zh, this message translates to:
+  /// **'B站充电'**
+  String get donateBilibili;
+
+  /// No description provided for @donateTapToOpen.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击前往赞助页'**
+  String get donateTapToOpen;
+
+  /// No description provided for @donateTapToCharge.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击前往充电页'**
+  String get donateTapToCharge;
+
+  /// No description provided for @donateNotConfigured.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未配置链接（见 lib/core/donate_config.dart）'**
+  String get donateNotConfigured;
+
+  /// No description provided for @donateScan.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫码赞助'**
+  String get donateScan;
+
+  /// No description provided for @donateWechat.
+  ///
+  /// In zh, this message translates to:
+  /// **'微信赞赏'**
+  String get donateWechat;
+
+  /// No description provided for @donateAlipay.
+  ///
+  /// In zh, this message translates to:
+  /// **'支付宝收款'**
+  String get donateAlipay;
+
+  /// No description provided for @donatePlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'待添加\n收款码'**
+  String get donatePlaceholder;
+
+  /// No description provided for @donateLinkFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开链接：{url}'**
+  String donateLinkFailed(Object url);
 }
 
 class _AppLocalizationsDelegate

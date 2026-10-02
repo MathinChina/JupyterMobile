@@ -102,5 +102,24 @@
   "extensionServerDesc": "Server-level extensions, run in Termux",
   "stepNbextension": "⑤ Install nbextension (front-end extension)",
   "stepLabextension": "⑥ Install labextension (front-end extension)",
-  "extensionReplaceName": "Replace <name> with the extension name"
+  "extensionReplaceName": "Replace <name> with the extension name",
+
+  "donate": "Donate",
+  "donateTitle": "Support",
+  "donateIntro": "If this tool helps you, consider buying the author a coffee ☕",
+  "donateBuyMeACoffee": "Buy Me a Coffee",
+  "donateBilibili": "Bilibili charge",
+  "donateTapToOpen": "Open sponsor page",
+  "donateTapToCharge": "Open charging page",
+  "donateNotConfigured": "Link not configured yet (see lib/core/donate_config.dart)",
+  "donateScan": "Scan to donate",
+  "donateWechat": "WeChat reward",
+  "donateAlipay": "Alipay",
+  "donatePlaceholder": "QR code\ncoming soon",
+  "donateLinkFailed": "Cannot open link: {url}",
+  "@donateLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  }
 }

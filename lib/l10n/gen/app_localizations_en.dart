@@ -253,4 +253,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get extensionReplaceName => 'Replace <name> with the extension name';
+
+  @override
+  String get donate => 'Donate';
+
+  @override
+  String get donateTitle => 'Support';
+
+  @override
+  String get donateIntro =>
+      'If this tool helps you, consider buying the author a coffee ☕';
+
+  @override
+  String get donateBuyMeACoffee => 'Buy Me a Coffee';
+
+  @override
+  String get donateBilibili => 'Bilibili charge';
+
+  @override
+  String get donateTapToOpen => 'Open sponsor page';
+
+  @override
+  String get donateTapToCharge => 'Open charging page';
+
+  @override
+  String get donateNotConfigured =>
+      'Link not configured yet (see lib/core/donate_config.dart)';
+
+  @override
+  String get donateScan => 'Scan to donate';
+
+  @override
+  String get donateWechat => 'WeChat reward';
+
+  @override
+  String get donateAlipay => 'Alipay';
+
+  @override
+  String get donatePlaceholder => 'QR code\ncoming soon';
+
+  @override
+  String donateLinkFailed(Object url) {
+    return 'Cannot open link: $url';
+  }
 }

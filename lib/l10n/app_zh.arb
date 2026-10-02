@@ -102,5 +102,24 @@
   "extensionServerDesc": "服务器级扩展，需在 Termux 中运行",
   "stepNbextension": "⑤ 安装 nbextension（前端扩展）",
   "stepLabextension": "⑥ 安装 labextension（前端扩展）",
-  "extensionReplaceName": "把 <name> 替换为扩展名"
+  "extensionReplaceName": "把 <name> 替换为扩展名",
+
+  "donate": "赞助",
+  "donateTitle": "赞助支持",
+  "donateIntro": "如果这个工具对你有帮助，欢迎请作者喝杯咖啡 ☕",
+  "donateBuyMeACoffee": "Buy Me a Coffee",
+  "donateBilibili": "B站充电",
+  "donateTapToOpen": "点击前往赞助页",
+  "donateTapToCharge": "点击前往充电页",
+  "donateNotConfigured": "尚未配置链接（见 lib/core/donate_config.dart）",
+  "donateScan": "扫码赞助",
+  "donateWechat": "微信赞赏",
+  "donateAlipay": "支付宝收款",
+  "donatePlaceholder": "待添加\n收款码",
+  "donateLinkFailed": "无法打开链接：{url}",
+  "@donateLinkFailed": {
+    "placeholders": {
+      "url": {}
+    }
+  }
 }

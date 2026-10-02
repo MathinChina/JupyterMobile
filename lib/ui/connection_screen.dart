@@ -8,6 +8,7 @@ import '../core/termux/termux_deploy.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../state/connection_providers.dart';
 import '../state/locale_provider.dart';
+import 'donate_page.dart';
 import 'main_screen.dart';
 
 /// 连接界面：选择内核来源、填写地址/端口/token、提示 Termux 用法。
@@ -123,6 +124,13 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     );
   }
 
+  void _openDonate() {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute(builder: (context) => const DonatePage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -136,9 +144,21 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             const SizedBox(height: 12),
-            const Text(
-              'JupyterMobile',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'JupyterMobile',
+                    style:
+                        TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.donate,
+                  onPressed: _openDonate,
+                  icon: const Icon(Icons.favorite, color: Colors.pink),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(l10n.appSubtitle),
