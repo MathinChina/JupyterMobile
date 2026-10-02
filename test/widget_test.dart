@@ -50,4 +50,31 @@ void main() {
     // 两张收款码图片（Image.asset）存在且资产可加载。
     expect(find.byType(Image), findsNWidgets(2));
   });
+
+  testWidgets('令牌可随机生成且非空', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
+
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      const ProviderScope(child: JupyterMobileApp()),
+    );
+    await tester.pumpAndSettle();
+
+    // 令牌输入框初始即填入随机令牌（32 位 hex）。
+    final tokenField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (w) => w is TextField && w.obscureText == true,
+      ),
+    );
+    expect(tokenField.controller!.text, isNotEmpty);
+    expect(tokenField.controller!.text.length, 32);
+
+    // 点击「随机生成」按钮后令牌仍为 32 位 hex。
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pumpAndSettle();
+    expect(tokenField.controller!.text.length, 32);
+  });
 }

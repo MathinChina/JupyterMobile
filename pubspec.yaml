@@ -85,6 +85,13 @@ flutter:
   assets:
     - assets/images/donate/
 
+  # 等宽字体：覆盖 box-drawing / 箭头 / 数学符号等终端常用字符，
+  # 避免 pip / jupyter 输出中的表格框线等字符显示为方格子。
+  fonts:
+    - family: DejaVuSansMono
+      fonts:
+        - asset: assets/fonts/DejaVuSansMono.ttf
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

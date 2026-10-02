@@ -49,6 +49,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tokenHint => 'jupyter_server 的 IdentityProvider.token';
 
   @override
+  String get generateToken => '随机生成';
+
+  @override
   String get termuxDeploy => 'Termux 服务部署';
 
   @override
@@ -159,6 +162,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get delete => '删除';
+
+  @override
+  String get collapse => '折叠';
+
+  @override
+  String get expand => '展开';
 
   @override
   String get interrupt => '中断';

@@ -15,6 +15,7 @@
   "portHint": "Default 8888",
   "token": "Token",
   "tokenHint": "IdentityProvider.token of jupyter_server",
+  "generateToken": "Generate",
 
   "termuxDeploy": "Termux service setup",
   "termuxDeploySubtitle": "Separate config from commands: write config once, then start/stop",
@@ -65,6 +66,8 @@
   "moveUp": "Move up",
   "moveDown": "Move down",
   "delete": "Delete",
+  "collapse": "Collapse",
+  "expand": "Expand",
   "interrupt": "Interrupt",
   "run": "Run",
   "emptyMarkdown": "(Empty Markdown, tap to edit)",

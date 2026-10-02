@@ -7,6 +7,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../core/ansi.dart';
 import '../../core/notebook/notebook.dart';
 import '../../l10n/gen/app_localizations.dart';
 
@@ -122,11 +123,16 @@ class CellOutputView extends StatelessWidget {
   }
 
   Widget _mono(String text, {Color color = Colors.black87}) {
+    final cleaned = stripAnsi(text);
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: SelectableText(
-        text.isEmpty ? ' ' : text,
-        style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: color),
+        cleaned.isEmpty ? ' ' : cleaned,
+        style: TextStyle(
+          fontFamily: 'DejaVuSansMono',
+          fontSize: 13,
+          color: color,
+        ),
       ),
     );
   }
@@ -145,7 +151,7 @@ class _LatexView extends StatelessWidget {
       textStyle: const TextStyle(fontSize: 15),
       onErrorFallback: (_) => SelectableText(
         tex,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+        style: const TextStyle(fontFamily: 'DejaVuSansMono', fontSize: 13),
       ),
     );
   }

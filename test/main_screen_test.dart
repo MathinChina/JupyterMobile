@@ -169,4 +169,46 @@ void main() {
     // 流式输出被追加显示。
     expect(find.textContaining('Successfully installed numpy'), findsOneWidget);
   });
+
+  testWidgets('代码 cell 折叠/展开', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MainScreen(connection: _FakeConnection()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 初始 1 个 markdown cell（默认），1 个折叠按钮（expand_less）。
+    expect(find.byIcon(Icons.expand_less), findsOneWidget);
+
+    // 添加一个 code cell。
+    await tester.tap(find.widgetWithText(OutlinedButton, '代码'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.expand_less), findsNWidgets(2));
+
+    // 新 code cell 处于编辑态，点「完成」结束编辑，回到源码显示态。
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+    expect(find.text('（点击输入代码）'), findsOneWidget);
+
+    // 折叠第二个（code）cell：其源码提示应隐藏。
+    await tester.tap(find.byIcon(Icons.expand_less).at(1));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    expect(find.text('（点击输入代码）'), findsNothing);
+
+    // 展开后源码提示恢复。
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pumpAndSettle();
+    expect(find.text('（点击输入代码）'), findsOneWidget);
+  });
 }

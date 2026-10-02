@@ -37,6 +37,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int? _runningIndex;
   String _fileName = '';
   bool _markdownPreview = false;
+  final Set<int> _collapsed = {};
   bool _initialized = false;
 
   @override
@@ -444,17 +445,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Widget _buildCell(NotebookCell cell, int index) {
     final isEditing = _editingIndex == index;
+    final isCollapsed = _collapsed.contains(index);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildCellHeader(cell, index),
-          const Divider(height: 1),
-          if (isEditing)
-            _buildCellEditor(cell)
-          else
-            _buildCellBody(cell, index),
+          if (!isCollapsed) ...[
+            const Divider(height: 1),
+            if (isEditing)
+              _buildCellEditor(cell)
+            else
+              _buildCellBody(cell, index),
+          ],
         ],
       ),
     );
@@ -463,10 +467,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildCellHeader(NotebookCell cell, int index) {
     final l10n = AppLocalizations.of(context);
     final isCode = cell is CodeCell;
+    final isCollapsed = _collapsed.contains(index);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Row(
         children: [
+          IconButton(
+            tooltip: isCollapsed ? l10n.expand : l10n.collapse,
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              isCollapsed ? Icons.expand_more : Icons.expand_less,
+              size: 18,
+            ),
+            onPressed: () => _toggleCollapse(index),
+          ),
           Text(
             isCode ? l10n.code : l10n.markdown,
             style: TextStyle(
@@ -523,6 +537,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  void _toggleCollapse(int index) {
+    setState(() {
+      if (!_collapsed.remove(index)) {
+        _collapsed.add(index);
+      }
+    });
+  }
+
   Widget _buildCellBody(NotebookCell cell, int index) {
     final l10n = AppLocalizations.of(context);
     if (cell is MarkdownCell) {
@@ -574,7 +596,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     // RawCell
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Text(cell.source, style: const TextStyle(fontFamily: 'monospace')),
+      child: Text(
+        cell.source,
+        style: const TextStyle(fontFamily: 'DejaVuSansMono'),
+      ),
     );
   }
 
@@ -592,7 +617,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             maxLines: null,
             keyboardType: TextInputType.multiline,
             style: TextStyle(
-              fontFamily: isCode ? 'monospace' : null,
+              fontFamily: isCode ? 'DejaVuSansMono' : null,
               fontSize: 13,
             ),
             decoration: const InputDecoration(

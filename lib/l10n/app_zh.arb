@@ -15,6 +15,7 @@
   "portHint": "默认 8888",
   "token": "Token",
   "tokenHint": "jupyter_server 的 IdentityProvider.token",
+  "generateToken": "随机生成",
 
   "termuxDeploy": "Termux 服务部署",
   "termuxDeploySubtitle": "配置与命令分离：写一次配置，日常只跑启动 / 停止",
@@ -65,6 +66,8 @@
   "moveUp": "上移",
   "moveDown": "下移",
   "delete": "删除",
+  "collapse": "折叠",
+  "expand": "展开",
   "interrupt": "中断",
   "run": "运行",
   "emptyMarkdown": "（空 Markdown，点击编辑）",

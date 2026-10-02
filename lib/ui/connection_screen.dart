@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,11 +61,25 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         _portController.text = config.port.toString();
         _tokenController.text = config.token;
       }
+      // 令牌为空时生成一个随机令牌，保证连接与 Termux 脚本使用同一令牌。
+      if (_tokenController.text.trim().isEmpty) {
+        _tokenController.text = _generateToken();
+      }
       _autoConnect = autoConnect;
     });
     if (autoConnect && config != null) {
       await _connect(config);
     }
+  }
+
+  /// 生成 32 位十六进制随机令牌（token）。
+  ///
+  /// 令牌在界面上可手动指定，也可一键随机生成；连接与 Termux 部署脚本
+  /// 始终使用同一个令牌，保证两边一致。
+  String _generateToken() {
+    final rng = Random.secure();
+    return List.generate(
+        16, (_) => rng.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
   }
 
   KernelConnectionConfig _currentConfig() {
@@ -104,7 +120,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   TermuxDeploy get _deploy {
     final port = int.tryParse(_portController.text.trim()) ?? 8888;
     final token = _tokenController.text.trim().isEmpty
-        ? 'changeme'
+        ? _generateToken()
         : _tokenController.text.trim();
     return TermuxDeploy(
       location: _configLocation,
@@ -269,11 +285,23 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
             hintText: l10n.tokenHint,
             prefixIcon: const Icon(Icons.key),
             border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscureToken ? Icons.visibility : Icons.visibility_off,
-              ),
-              onPressed: () => setState(() => _obscureToken = !_obscureToken),
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: l10n.generateToken,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  onPressed: () =>
+                      setState(() => _tokenController.text = _generateToken()),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _obscureToken ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscureToken = !_obscureToken),
+                ),
+              ],
             ),
           ),
         ),
@@ -357,7 +385,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
             script,
             style: const TextStyle(
               color: Colors.white,
-              fontFamily: 'monospace',
+                  fontFamily: 'DejaVuSansMono',
               fontSize: 12,
             ),
           ),

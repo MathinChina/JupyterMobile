@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/ansi.dart';
 import '../core/kernel/kernel_connection.dart';
 import '../core/kernel/kernel_event.dart';
 import '../l10n/gen/app_localizations.dart';
@@ -57,7 +58,7 @@ class _ExtensionManagerSheetState extends State<ExtensionManagerSheet> {
         if (!mounted) return;
         switch (event) {
           case KernelStreamEvent(:final text):
-            setState(() => _output += text);
+            setState(() => _output += stripAnsi(text));
           case KernelErrorEvent(:final ename, :final evalue, :final traceback):
             setState(() {
               _output += '$ename: $evalue\n';
@@ -161,7 +162,7 @@ class _ExtensionManagerSheetState extends State<ExtensionManagerSheet> {
                 _output.isEmpty ? l10n.extensionOutputEmpty : _output,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontFamily: 'monospace',
+                  fontFamily: 'DejaVuSansMono',
                   fontSize: 12,
                 ),
               ),
