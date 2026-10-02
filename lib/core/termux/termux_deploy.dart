@@ -20,6 +20,10 @@ enum TermuxConfigLocation {
   shared;
 }
 
+/// 一键部署脚本 `jupytermobile.sh` 的下载地址（master 分支 raw）。
+const String _oneClickScriptUrl =
+    'https://gitee.com/mathinchina/JupyterMobile/raw/master/jupytermobile.sh';
+
 /// 依据可选项生成 Termux 部署脚本。
 class TermuxDeploy {
   const TermuxDeploy({
@@ -57,6 +61,27 @@ class TermuxDeploy {
   /// 首次安装（已装可跳过）。
   String installScript() =>
       'pkg install python python-numpy && pip install jupyter';
+
+  /// 一键部署：下载 `jupytermobile.sh` 并安装 `jm` 命令，再配置端口/令牌并启动。
+  ///
+  /// 与「手动命令」的区别：无需逐条复制 ①~④，下载执行一次即可。脚本安装的
+  /// `jm` / `jupytermobile` 命令后续可用 `jm status` / `jm stop` / `jm log`
+  /// 管理服务。
+  String oneClickScript() {
+    return [
+      '# 1. 下载一键部署脚本',
+      'curl -fsSL $_oneClickScriptUrl -o jupytermobile.sh',
+      '',
+      '# 2. 安装 jm / jupytermobile 命令',
+      'bash jupytermobile.sh',
+      '',
+      '# 3. 配置端口与令牌（与 App 保持一致）',
+      'jm config --port $port --token $token',
+      '',
+      '# 4. 后台启动',
+      'jm start',
+    ].join('\n');
+  }
 
   /// 写入配置（配置与命令分离：只做一次）。
   String writeConfigScript() {

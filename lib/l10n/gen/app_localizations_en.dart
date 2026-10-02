@@ -53,6 +53,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateToken => 'Generate';
 
   @override
+  String get deployMethod => 'Deploy method';
+
+  @override
+  String get deployManual => 'Manual commands';
+
+  @override
+  String get deployOneClick => 'One-click script';
+
+  @override
+  String get stepOneClick => 'One-click setup';
+
+  @override
+  String get oneClickHint =>
+      'After install, manage with jm status / jm stop / jm log';
+
+  @override
   String get termuxDeploy => 'Termux service setup';
 
   @override

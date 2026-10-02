@@ -27,6 +27,17 @@ void main() {
     expect(private.logFile, r'$HOME/.jupyter/nb.log');
   });
 
+  test('oneClickScript 下载脚本并安装 jm，配置端口/令牌后启动', () {
+    final s = private.oneClickScript();
+    expect(s, contains('curl -fsSL'));
+    expect(s, contains('jupytermobile.sh'));
+    expect(s, contains('bash jupytermobile.sh'));
+    expect(s, contains('jm config --port 9999 --token s3cret'));
+    expect(s, contains('jm start'));
+    expect(s, contains('jupytermobile.sh'));
+    expect(s, contains('gitee.com/mathinchina/JupyterMobile'));
+  });
+
   test('writeConfigScript 使用 IdentityProvider.token 且不含废弃项', () {
     final s = private.writeConfigScript();
     expect(s, contains("c.ServerApp.ip = '127.0.0.1'"));

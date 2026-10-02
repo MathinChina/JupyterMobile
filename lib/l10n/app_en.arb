@@ -17,6 +17,12 @@
   "tokenHint": "IdentityProvider.token of jupyter_server",
   "generateToken": "Generate",
 
+  "deployMethod": "Deploy method",
+  "deployManual": "Manual commands",
+  "deployOneClick": "One-click script",
+  "stepOneClick": "One-click setup",
+  "oneClickHint": "After install, manage with jm status / jm stop / jm log",
+
   "termuxDeploy": "Termux service setup",
   "termuxDeploySubtitle": "Separate config from commands: write config once, then start/stop",
   "configDir": "Config directory",

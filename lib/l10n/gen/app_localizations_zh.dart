@@ -52,6 +52,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get generateToken => '随机生成';
 
   @override
+  String get deployMethod => '部署方式';
+
+  @override
+  String get deployManual => '手动命令';
+
+  @override
+  String get deployOneClick => '一键脚本';
+
+  @override
+  String get stepOneClick => '一键部署';
+
+  @override
+  String get oneClickHint => '安装后可用 jm status / jm stop / jm log 管理服务';
+
+  @override
   String get termuxDeploy => 'Termux 服务部署';
 
   @override

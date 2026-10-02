@@ -13,6 +13,12 @@ import '../state/locale_provider.dart';
 import 'donate_page.dart';
 import 'main_screen.dart';
 
+/// Termux 部署方式：手动命令（逐条复制）或一键脚本（下载执行一次）。
+enum _DeployMode {
+  manual,
+  oneClick,
+}
+
 /// 连接界面：选择内核来源、填写地址/端口/token、提示 Termux 用法。
 ///
 /// 「保持上一次状态」落在这里：进入时恢复上次配置；开启「自动连接」后
@@ -33,6 +39,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   bool _autoConnect = false;
   KernelSource _source = KernelSource.external;
   TermuxConfigLocation _configLocation = TermuxConfigLocation.shared;
+  _DeployMode _deployMode = _DeployMode.manual;
 
   @override
   void initState() {
@@ -318,6 +325,57 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         subtitle: Text(l10n.termuxDeploySubtitle),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
+          const SizedBox(height: 4),
+          Text(l10n.deployMethod,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(l10n.deployManual),
+                selected: _deployMode == _DeployMode.manual,
+                onSelected: (_) =>
+                    setState(() => _deployMode = _DeployMode.manual),
+              ),
+              ChoiceChip(
+                label: Text(l10n.deployOneClick),
+                selected: _deployMode == _DeployMode.oneClick,
+                onSelected: (_) =>
+                    setState(() => _deployMode = _DeployMode.oneClick),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_deployMode == _DeployMode.oneClick)
+            _buildOneClickSection(l10n, deploy)
+          else
+            _buildManualSection(l10n, deploy),
+        ],
+      ),
+    );
+  }
+
+  /// 一键脚本部署方式：下载执行一次，后续用 jm 命令管理。
+  Widget _buildOneClickSection(AppLocalizations l10n, TermuxDeploy deploy) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildScriptBlock(l10n, l10n.stepOneClick, deploy.oneClickScript()),
+        const SizedBox(height: 4),
+        Text(
+          l10n.oneClickHint,
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  /// 手动命令部署方式：逐条复制 ①~⑥。
+  Widget _buildManualSection(AppLocalizations l10n, TermuxDeploy deploy) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           Text(l10n.configDir,
               style: const TextStyle(fontWeight: FontWeight.w600)),
           RadioGroup<TermuxConfigLocation>(
@@ -361,8 +419,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
               l10n, l10n.stepNbextension, deploy.nbextensionScript('<name>')),
           _buildScriptBlock(l10n,
               l10n.stepLabextension, deploy.labextensionScript('<name>')),
-        ],
-      ),
+      ],
     );
   }
 

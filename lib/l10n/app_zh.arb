@@ -17,6 +17,12 @@
   "tokenHint": "jupyter_server 的 IdentityProvider.token",
   "generateToken": "随机生成",
 
+  "deployMethod": "部署方式",
+  "deployManual": "手动命令",
+  "deployOneClick": "一键脚本",
+  "stepOneClick": "一键部署",
+  "oneClickHint": "安装后可用 jm status / jm stop / jm log 管理服务",
+
   "termuxDeploy": "Termux 服务部署",
   "termuxDeploySubtitle": "配置与命令分离：写一次配置，日常只跑启动 / 停止",
   "configDir": "配置目录",

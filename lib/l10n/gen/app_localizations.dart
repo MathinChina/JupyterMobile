@@ -182,6 +182,36 @@ abstract class AppLocalizations {
   /// **'随机生成'**
   String get generateToken;
 
+  /// No description provided for @deployMethod.
+  ///
+  /// In zh, this message translates to:
+  /// **'部署方式'**
+  String get deployMethod;
+
+  /// No description provided for @deployManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动命令'**
+  String get deployManual;
+
+  /// No description provided for @deployOneClick.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键脚本'**
+  String get deployOneClick;
+
+  /// No description provided for @stepOneClick.
+  ///
+  /// In zh, this message translates to:
+  /// **'一键部署'**
+  String get stepOneClick;
+
+  /// No description provided for @oneClickHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'安装后可用 jm status / jm stop / jm log 管理服务'**
+  String get oneClickHint;
+
   /// No description provided for @termuxDeploy.
   ///
   /// In zh, this message translates to:
