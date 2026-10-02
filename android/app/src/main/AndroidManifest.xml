@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 联网权限：连接本机 Termux / 远程 Jupyter 服务（HTTP + WebSocket）所必需。
+         Flutter 仅给 debug/profile 自动加此权限，release 构建必须手动声明。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="jupyter_mobile"
         android:name="${applicationName}"

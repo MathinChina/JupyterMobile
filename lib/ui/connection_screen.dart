@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/kernel/kernel_connection_config.dart';
 import '../core/kernel/kernel_source.dart';
+import '../core/termux/termux_deploy.dart';
 import '../state/connection_providers.dart';
 import 'main_screen.dart';
 
@@ -26,6 +27,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   bool _obscureToken = true;
   bool _autoConnect = false;
   KernelSource _source = KernelSource.external;
+  TermuxConfigLocation _configLocation = TermuxConfigLocation.shared;
 
   @override
   void initState() {
@@ -95,22 +97,25 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     }
   }
 
-  String get _termuxScript {
-    final port = _portController.text.trim().isEmpty
-        ? '8888'
-        : _portController.text.trim();
+  /// 依据界面当前填写值 + 部署可选项生成脚本集。
+  TermuxDeploy get _deploy {
+    final port = int.tryParse(_portController.text.trim()) ?? 8888;
     final token = _tokenController.text.trim().isEmpty
         ? 'changeme'
         : _tokenController.text.trim();
-    return 'pkg install python python-numpy && pip install jupyter && '
-        'jupyter server --no-browser --port=$port --NotebookApp.token=$token';
+    return TermuxDeploy(
+      location: _configLocation,
+      ip: '127.0.0.1',
+      port: port,
+      token: token,
+    );
   }
 
-  Future<void> _copyTermuxScript() async {
-    await Clipboard.setData(ClipboardData(text: _termuxScript));
+  Future<void> _copy(String text, {String? message}) async {
+    await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已复制到剪贴板，粘贴到 Termux 执行')),
+      SnackBar(content: Text(message ?? '已复制到剪贴板')),
     );
   }
 
@@ -249,40 +254,81 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   }
 
   Widget _buildTermuxCard() {
+    final deploy = _deploy;
     return Card(
       child: ExpansionTile(
         leading: const Icon(Icons.terminal),
-        title: const Text('Termux 一键启动服务'),
-        subtitle: const Text('复制到 Termux 执行，先安装 Python 与 jupyter'),
+        title: const Text('Termux 服务部署'),
+        subtitle: const Text('配置与命令分离：写一次配置，日常只跑启动 / 停止'),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: SelectableText(
-              _termuxScript,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: 'monospace',
-                fontSize: 12,
-              ),
+          const Text('配置目录', style: TextStyle(fontWeight: FontWeight.w600)),
+          RadioGroup<TermuxConfigLocation>(
+            groupValue: _configLocation,
+            onChanged: (TermuxConfigLocation? v) {
+              if (v != null) setState(() => _configLocation = v);
+            },
+            child: Column(
+              children: [
+                RadioListTile<TermuxConfigLocation>(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: const Text('Termux 私有目录 (~/.jupyter)'),
+                  subtitle: const Text('仅 Termux 可访问，其他 App 看不到'),
+                  value: TermuxConfigLocation.private,
+                ),
+                RadioListTile<TermuxConfigLocation>(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: const Text('共享目录 (/sdcard/JupyterMobile)'),
+                  subtitle: const Text('文件管理器 / Shizuku 可直接读写（推荐）'),
+                  value: TermuxConfigLocation.shared,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _copyTermuxScript,
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('复制'),
-            ),
-          ),
+          const Divider(),
+          _buildScriptBlock('① 首次安装（已装可跳过）', deploy.installScript()),
+          _buildScriptBlock('② 写入配置（一次性）', deploy.writeConfigScript()),
+          _buildScriptBlock('③ 启动服务', deploy.startScript()),
+          _buildScriptBlock('④ 停止服务', deploy.stopScript()),
         ],
       ),
+    );
+  }
+
+  Widget _buildScriptBlock(String title, String script) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black87,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SelectableText(
+            script,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'monospace',
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => _copy(script),
+            icon: const Icon(Icons.copy, size: 18),
+            label: const Text('复制'),
+          ),
+        ),
+      ],
     );
   }
 

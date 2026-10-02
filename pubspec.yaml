@@ -58,6 +58,11 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+dependency_overrides:
+  # path_provider_android 2.3.0+ 改用 JNI 实现，会引入 dart-lang/jni（需要 NDK 28.2）。
+  # 本机只有 NDK r29，为避免 NDK 版本冲突（CXX1104），锁回纯 Kotlin 实现 2.2.23。
+  path_provider_android: 2.2.23
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
