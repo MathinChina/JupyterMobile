@@ -115,5 +115,7 @@ samples, guidance on mobile development, and a full API reference.
 
 ## 许可
 
+本项目采用 **GPL-3.0-only** 许可证，详见 [LICENSE](LICENSE)。
+
 项目依赖的 `DejaVu Sans Mono` 字体版权归 Bitstream / DejaVu 团队所有，其
 改动为公共领域（public domain），详见字体文件内嵌的许可说明。
