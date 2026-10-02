@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.1
+
+### 变更
+
+- 移除微信 / 支付宝收款码，赞助页改为纯链接（Buy Me a Coffee + B站充电）
+- 项目采用 GPL-3.0-only 许可证，新增 LICENSE
+- Gradle wrapper 纳入版本控制，为 F-Droid 上架做准备
+
 ## v1.1.0
 
 ### 新增
