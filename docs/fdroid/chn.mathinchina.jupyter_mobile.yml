@@ -3,15 +3,15 @@ Categories:
   - Science & Education
 License: GPL-3.0-only
 AuthorName: MathinChina
-SourceCode: https://gitee.com/mathinchina/JupyterMobile
-IssueTracker: https://gitee.com/mathinchina/JupyterMobile/issues
-Changelog: https://gitee.com/mathinchina/JupyterMobile/releases
+SourceCode: https://github.com/MathinChina/JupyterMobile
+IssueTracker: https://github.com/MathinChina/JupyterMobile/issues
+Changelog: https://github.com/MathinChina/JupyterMobile/releases
 
 AutoName: JupyterMobile
 Name: JupyterMobile
 
 RepoType: git
-Repo: https://gitee.com/mathinchina/JupyterMobile
+Repo: https://github.com/MathinChina/JupyterMobile
 
 Builds:
   - versionName: '1.1.1'

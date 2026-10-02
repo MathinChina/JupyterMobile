@@ -26,5 +26,5 @@
 - 项目当前工具链较新（Gradle 9.3.1 / AGP 9.1.0 / Kotlin 2.4.0 / NDK 29）。
   按当前约定不在项目内降级；若 F-Droid 构建服务器不支持这些版本，需与
   reviewer 沟通调整构建环境或工具链版本。
-- 源仓库为 gitee.com；若 F-Droid 服务器克隆 gitee 不稳定，建议镜像到
-  GitHub / GitLab / Codeberg。
+- 源码已镜像到 GitHub（`github.com/MathinChina/JupyterMobile`），作为 F-Droid
+  构建服务器拉取源码的主仓库；gitee 仅作为镜像源。
