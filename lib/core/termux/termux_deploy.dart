@@ -14,15 +14,10 @@ library;
 /// 配置文件与 notebook 的存放位置。
 enum TermuxConfigLocation {
   /// Termux 默认私有目录 `~/.jupyter`（仅 Termux 自身可访问）。
-  private('Termux 私有目录 (~/.jupyter)'),
+  private,
 
   /// 外部共享目录 `/sdcard/JupyterMobile`（文件管理器 / Shizuku 可访问）。
-  shared('共享目录 (/sdcard，可被 Shizuku 访问)');
-
-  const TermuxConfigLocation(this.label);
-
-  /// 界面展示用中文标签。
-  final String label;
+  shared;
 }
 
 /// 依据可选项生成 Termux 部署脚本。
@@ -71,8 +66,8 @@ class TermuxDeploy {
       "c.ServerApp.ip = '$ip'",
       'c.ServerApp.port = $port',
       'c.ServerApp.open_browser = False',
-      '# Jupyter Server 2.x 用 IdentityProvider.token'
-          '（旧的 ServerApp.token / NotebookApp.token 已废弃）',
+      '# Jupyter Server 2.x uses IdentityProvider.token'
+          ' (ServerApp.token / NotebookApp.token are deprecated).',
       "c.IdentityProvider.token = '$token'",
       'EOF',
     ].join('\n');
@@ -84,7 +79,7 @@ class TermuxDeploy {
       'mkdir -p "$notebookDir"',
       'JUPYTER_CONFIG_DIR="$configDir" nohup jupyter notebook'
           ' "$notebookDir" > "$logFile" 2>&1 &',
-      'echo "已启动（后台），日志：$logFile"',
+      'echo "Started in background. Log: $logFile"',
     ].join('\n');
   }
 
@@ -92,7 +87,22 @@ class TermuxDeploy {
   String stopScript() {
     return [
       'jupyter server stop $port 2>/dev/null || pkill -f jupyter-notebook',
-      'echo "已停止"',
+      'echo "Stopped."',
     ].join('\n');
   }
+
+  /// 安装经典 notebook 前端扩展（nbextension）。
+  ///
+  /// `--user` 避免需要 root；`--sys-prefix` 亦可，但 Termux 场景 `--user`
+  /// 更省事（无需写系统目录）。`<name>` 为占位符，由用户替换为扩展名。
+  String nbextensionScript(String name) =>
+      'jupyter nbextension install --user $name'
+      ' && jupyter nbextension enable --user $name';
+
+  /// 安装 JupyterLab 前端扩展（labextension）。
+  ///
+  /// JupyterLab 3+ 依赖预构建包，`jupyter labextension install` 已逐步
+  /// 由 pip 包自带的前端资源取代，但入口仍保留以兼容旧版。
+  String labextensionScript(String name) =>
+      'jupyter labextension install $name';
 }

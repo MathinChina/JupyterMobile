@@ -10,7 +10,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../core/kernel/kernel_connection.dart';
 import '../core/kernel/kernel_event.dart';
 import '../core/notebook/notebook.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../state/connection_providers.dart';
+import 'extension_manager_sheet.dart';
 import 'widgets/cell_output_view.dart';
 import 'widgets/code_highlight.dart';
 
@@ -33,17 +35,25 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   StreamSubscription<KernelEvent>? _execSub;
   int? _editingIndex;
   int? _runningIndex;
-  String _fileName = '未命名.ipynb';
+  String _fileName = '';
   bool _markdownPreview = false;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _editController.addListener(_onEditChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initialized) return;
+    _initialized = true;
     _doc.cells.add(MarkdownCell(
       id: notebookNewId(),
       metadata: const {},
-      source: '# 新 Notebook\n\n点击单元格编辑，运行代码单元执行 Python。',
+      source: AppLocalizations.of(context).newNotebookContent,
     ));
   }
 
@@ -60,9 +70,36 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (_markdownPreview && mounted) setState(() {});
   }
 
+  // ---- 命名 ----
+
+  /// 当前显示用文件名；未命名时回退到本地化默认名。
+  String get _currentFileName {
+    final name = _fileName;
+    if (name.isNotEmpty) return name;
+    return AppLocalizations.of(context).untitled;
+  }
+
+  /// 重命名当前 notebook 文件名（点击 AppBar 标题触发）。
+  Future<void> _renameNotebook() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => _RenameDialog(initialName: _currentFileName),
+    );
+    if (result == null) return;
+
+    var name = result.trim();
+    if (name.isEmpty) return;
+    if (!name.toLowerCase().endsWith('.ipynb')) {
+      name = '$name.ipynb';
+    }
+    if (!mounted) return;
+    setState(() => _fileName = name);
+  }
+
   // ---- 文件操作 ----
 
   Future<void> _openFile() async {
+    final l10n = AppLocalizations.of(context);
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: const ['ipynb'],
@@ -78,14 +115,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         _editingIndex = null;
       });
     } catch (e) {
-      _showSnack('打开失败：$e');
+      if (mounted) _showSnack(l10n.openFailed('$e'));
     }
   }
 
   Future<void> _saveFile() async {
     final bytes = Uint8List.fromList(utf8.encode(_doc.encode()));
     final uri = await FilePicker.saveFile(
-      fileName: _fileName,
+      fileName: _currentFileName,
       bytes: bytes,
       mimeType: 'application/x-ipynb+json',
       type: FileType.custom,
@@ -95,7 +132,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       _fileName = uri.pathSegments.isNotEmpty
           ? uri.pathSegments.last
           : _fileName;
-      if (mounted) _showSnack('已保存');
+      if (mounted) _showSnack(AppLocalizations.of(context).saved);
     }
   }
 
@@ -105,9 +142,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       _doc.cells.add(MarkdownCell(
         id: notebookNewId(),
         metadata: const {},
-        source: '# 新 Notebook',
+        source: AppLocalizations.of(context).newNotebookContent,
       ));
-      _fileName = '未命名.ipynb';
+      _fileName = '';
       _editingIndex = null;
     });
   }
@@ -254,11 +291,23 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     try {
       await widget.connection.restart();
       if (mounted) {
-        _showSnack('内核已重启');
+        _showSnack(AppLocalizations.of(context).kernelRestarted);
       }
     } catch (e) {
-      if (mounted) _showSnack('重启失败：$e');
+      if (mounted) {
+        _showSnack(AppLocalizations.of(context).restartFailed('$e'));
+      }
     }
+  }
+
+  /// 打开扩展管理（pip 包安装，流式显示输出）。
+  void _openExtensionManager() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          ExtensionManagerSheet(connection: widget.connection),
+    );
   }
 
   Future<void> _disconnect() async {
@@ -272,22 +321,35 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final baseUrl = widget.connection.config.baseUrl;
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _fileName,
-          style: const TextStyle(fontSize: 16),
-          overflow: TextOverflow.ellipsis,
+        title: GestureDetector(
+          onTap: _renameNotebook,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  _currentFileName,
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.edit_outlined, size: 14),
+            ],
+          ),
         ),
         actions: [
           IconButton(
-            tooltip: '打开',
+            tooltip: l10n.open,
             icon: const Icon(Icons.folder_open),
             onPressed: _openFile,
           ),
           IconButton(
-            tooltip: '保存',
+            tooltip: l10n.save,
             icon: const Icon(Icons.save_outlined),
             onPressed: _saveFile,
           ),
@@ -298,14 +360,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   _newNotebook();
                 case 'restart':
                   _restart();
+                case 'extensions':
+                  _openExtensionManager();
                 case 'disconnect':
                   _disconnect();
               }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'new', child: Text('新建')),
-              PopupMenuItem(value: 'restart', child: Text('重启内核')),
-              PopupMenuItem(value: 'disconnect', child: Text('断开连接')),
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'new', child: Text(l10n.newNotebook)),
+              PopupMenuItem(value: 'restart', child: Text(l10n.restartKernel)),
+              PopupMenuItem(value: 'extensions', child: Text(l10n.extensions)),
+              PopupMenuItem(value: 'disconnect', child: Text(l10n.disconnect)),
             ],
           ),
         ],
@@ -349,6 +414,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildToolbar() {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       top: false,
       child: Padding(
@@ -359,7 +425,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: OutlinedButton.icon(
                 onPressed: _addCodeCell,
                 icon: const Icon(Icons.code, size: 18),
-                label: const Text('代码'),
+                label: Text(l10n.code),
               ),
             ),
             const SizedBox(width: 8),
@@ -367,7 +433,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: OutlinedButton.icon(
                 onPressed: _addMarkdownCell,
                 icon: const Icon(Icons.text_fields, size: 18),
-                label: const Text('Markdown'),
+                label: Text(l10n.markdown),
               ),
             ),
           ],
@@ -395,13 +461,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildCellHeader(NotebookCell cell, int index) {
+    final l10n = AppLocalizations.of(context);
     final isCode = cell is CodeCell;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Row(
         children: [
           Text(
-            isCode ? '代码' : 'Markdown',
+            isCode ? l10n.code : l10n.markdown,
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,
@@ -418,13 +485,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
           const Spacer(),
           IconButton(
-            tooltip: '上移',
+            tooltip: l10n.moveUp,
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.arrow_upward, size: 18),
             onPressed: index > 0 ? () => _moveCell(index, -1) : null,
           ),
           IconButton(
-            tooltip: '下移',
+            tooltip: l10n.moveDown,
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.arrow_downward, size: 18),
             onPressed: index < _doc.cells.length - 1
@@ -432,14 +499,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 : null,
           ),
           IconButton(
-            tooltip: '删除',
+            tooltip: l10n.delete,
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.delete_outline, size: 20),
             onPressed: () => _deleteCell(index),
           ),
           if (isCode)
             IconButton(
-              tooltip: _runningIndex == index ? '中断' : '运行',
+              tooltip: _runningIndex == index ? l10n.interrupt : l10n.run,
               visualDensity: VisualDensity.compact,
               icon: Icon(
                 _runningIndex == index
@@ -457,13 +524,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildCellBody(NotebookCell cell, int index) {
+    final l10n = AppLocalizations.of(context);
     if (cell is MarkdownCell) {
       return InkWell(
         onTap: () => _startEdit(index),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: cell.source.trim().isEmpty
-              ? Text('（空 Markdown，点击编辑）',
+              ? Text(l10n.emptyMarkdown,
                   style: TextStyle(color: Colors.grey.shade400))
               : MarkdownBody(data: cell.source),
         ),
@@ -480,7 +548,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               padding: const EdgeInsets.all(12),
               child: cell.source.isEmpty
                   ? Text(
-                      '（点击输入代码）',
+                      l10n.tapToCode,
                       style: TextStyle(color: Colors.grey.shade400),
                     )
                   : SelectableText.rich(
@@ -511,6 +579,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildCellEditor(NotebookCell cell) {
+    final l10n = AppLocalizations.of(context);
     final isCode = cell is CodeCell;
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -542,7 +611,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     _markdownPreview ? Icons.edit : Icons.visibility,
                     size: 18,
                   ),
-                  label: Text(_markdownPreview ? '编辑' : '预览'),
+                  label: Text(_markdownPreview ? l10n.edit : l10n.preview),
                 ),
                 const Spacer(),
               ],
@@ -558,11 +627,66 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: FilledButton.icon(
               onPressed: _finishEdit,
               icon: const Icon(Icons.check, size: 18),
-              label: const Text('完成'),
+              label: Text(l10n.done),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 重命名对话框。自己持有 [TextEditingController]，在其 [dispose] 中释放，
+/// 避免在对话框退场动画期间释放控制器导致崩溃。
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.renameNotebook),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (v) => Navigator.pop(context, v),
+        decoration: InputDecoration(
+          labelText: l10n.fileName,
+          hintText: l10n.fileNameHint,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(l10n.ok),
+        ),
+      ],
     );
   }
 }

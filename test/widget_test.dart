@@ -7,7 +7,7 @@ import 'package:jupyter_mobile/main.dart';
 
 void main() {
   testWidgets('连接界面渲染 smoke test', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'locale_preference': 'zh'});
 
     // 连接界面内容较高，用更高的视口让底部按钮完整可见。
     tester.view.physicalSize = const Size(1080, 2400);

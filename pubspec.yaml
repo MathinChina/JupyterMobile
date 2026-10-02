@@ -30,6 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # 本地化（中英文切换）与 Material 组件本地化文案。
+  flutter_localizations:
+    sdk: flutter
+  # intl 由 flutter_localizations 需要，版本跟随其约束即可。
+  intl: any
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -68,6 +73,8 @@ dependency_overrides:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # 启用 `flutter gen-l10n`，从 lib/l10n/*.arb 生成本地化类。
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

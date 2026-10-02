@@ -1,0 +1,106 @@
+{
+  "@@locale": "zh",
+  "appTitle": "JupyterMobile",
+  "appSubtitle": "连接外部 Jupyter 内核，开始你的 notebook",
+
+  "kernelSource": "内核来源",
+  "sourceRemote": "远程服务器",
+  "sourceExternal": "本机 Termux",
+  "sourceBundled": "内置 Python",
+  "bundledComingSoon": "内置 Python 即将推出（阶段⑥）",
+
+  "serverAddress": "服务器地址",
+  "serverAddressHint": "例如 192.168.1.100 或 example.com",
+  "port": "端口",
+  "portHint": "默认 8888",
+  "token": "Token",
+  "tokenHint": "jupyter_server 的 IdentityProvider.token",
+
+  "termuxDeploy": "Termux 服务部署",
+  "termuxDeploySubtitle": "配置与命令分离：写一次配置，日常只跑启动 / 停止",
+  "configDir": "配置目录",
+  "privateDir": "Termux 私有目录 (~/.jupyter)",
+  "privateDirDesc": "仅 Termux 可访问，其他 App 看不到",
+  "sharedDir": "共享目录 (/sdcard/JupyterMobile)",
+  "sharedDirDesc": "文件管理器 / Shizuku 可直接读写（推荐）",
+  "stepInstall": "① 首次安装（已装可跳过）",
+  "stepConfig": "② 写入配置（一次性）",
+  "stepStart": "③ 启动服务",
+  "stepStop": "④ 停止服务",
+  "copy": "复制",
+  "copied": "已复制到剪贴板",
+
+  "autoConnect": "自动连接",
+  "autoConnectDesc": "下次启动直接使用上次配置连接",
+  "connect": "连接",
+
+  "untitled": "未命名.ipynb",
+  "renameNotebook": "重命名 Notebook",
+  "fileName": "文件名",
+  "fileNameHint": "例如 analysis.ipynb",
+  "cancel": "取消",
+  "ok": "确定",
+  "open": "打开",
+  "save": "保存",
+  "newNotebook": "新建",
+  "restartKernel": "重启内核",
+  "disconnect": "断开连接",
+  "saved": "已保存",
+  "openFailed": "打开失败：{error}",
+  "@openFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "kernelRestarted": "内核已重启",
+  "restartFailed": "重启失败：{error}",
+  "@restartFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+
+  "code": "代码",
+  "markdown": "Markdown",
+  "moveUp": "上移",
+  "moveDown": "下移",
+  "delete": "删除",
+  "interrupt": "中断",
+  "run": "运行",
+  "emptyMarkdown": "（空 Markdown，点击编辑）",
+  "tapToCode": "（点击输入代码）",
+  "edit": "编辑",
+  "preview": "预览",
+  "done": "完成",
+
+  "imageUnavailable": "（图片无法显示）",
+  "imageInvalid": "（图片数据无效）",
+
+  "newNotebookContent": "# 新 Notebook\n\n点击单元格编辑，运行代码单元执行 Python。",
+
+  "language": "语言",
+  "languageSystem": "跟随系统",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "settings": "设置",
+
+  "extensions": "扩展管理",
+  "extensionPipTitle": "安装 Python 包",
+  "extensionPackageHint": "例如 numpy、pandas、requests",
+  "extensionInstall": "安装",
+  "extensionInstalling": "安装中…",
+  "extensionOutput": "输出",
+  "extensionOutputEmpty": "安装输出将显示在这里",
+  "extensionSuccess": "安装完成",
+  "extensionFailed": "安装失败：{error}",
+  "@extensionFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "extensionServerTitle": "前端扩展（nbextension / labextension）",
+  "extensionServerDesc": "服务器级扩展，需在 Termux 中运行",
+  "stepNbextension": "⑤ 安装 nbextension（前端扩展）",
+  "stepLabextension": "⑥ 安装 labextension（前端扩展）",
+  "extensionReplaceName": "把 <name> 替换为扩展名"
+}

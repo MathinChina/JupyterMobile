@@ -23,7 +23,7 @@ final kernelConnectionFactoryProvider =
       KernelSource.remote => RemoteKernelProvider(config),
       KernelSource.external => ExternalKernelProvider(config),
       KernelSource.bundled =>
-        throw UnimplementedError('内置 Python（阶段⑥）尚未实现'),
+        throw UnimplementedError('Bundled Python (phase 6) not implemented yet'),
     };
   };
 });
@@ -69,7 +69,7 @@ class ConnectionController extends Notifier<ConnectionUiState> {
       state = ConnectionError(e.message);
       return false;
     } catch (e) {
-      state = ConnectionError('未知错误：$e');
+      state = ConnectionError('Unknown error: $e');
       return false;
     }
   }

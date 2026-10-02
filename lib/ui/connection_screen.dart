@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/kernel/kernel_connection_config.dart';
 import '../core/kernel/kernel_source.dart';
 import '../core/termux/termux_deploy.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../state/connection_providers.dart';
+import '../state/locale_provider.dart';
 import 'main_screen.dart';
 
 /// 连接界面：选择内核来源、填写地址/端口/token、提示 Termux 用法。
@@ -115,12 +117,15 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message ?? '已复制到剪贴板')),
+      SnackBar(
+        content: Text(message ?? AppLocalizations.of(context).copied),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(connectionControllerProvider);
     final isConnecting = state is ConnectionConnecting;
     final errorText = state is ConnectionError ? state.message : null;
@@ -136,15 +141,17 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            const Text('连接外部 Jupyter 内核，开始你的 notebook'),
+            Text(l10n.appSubtitle),
             const SizedBox(height: 24),
-            _buildSourceSection(),
+            _buildSourceSection(l10n),
             const SizedBox(height: 16),
-            _buildFormSection(),
+            _buildFormSection(l10n),
             const SizedBox(height: 16),
-            _buildTermuxCard(),
+            _buildTermuxCard(l10n),
             const SizedBox(height: 16),
-            _buildAutoConnectSwitch(),
+            _buildAutoConnectSwitch(l10n),
+            const SizedBox(height: 16),
+            _buildLanguageSection(l10n),
             if (errorText != null) ...[
               const SizedBox(height: 12),
               _buildError(errorText),
@@ -161,7 +168,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('连接', style: TextStyle(fontSize: 16)),
+                  : Text(l10n.connect, style: const TextStyle(fontSize: 16)),
             ),
             const SizedBox(height: 12),
           ],
@@ -170,18 +177,19 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     );
   }
 
-  Widget _buildSourceSection() {
+  Widget _buildSourceSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('内核来源', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(l10n.kernelSource,
+            style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: KernelSource.values.map((source) {
             final enabled = source != KernelSource.bundled;
             return ChoiceChip(
-              label: Text(source.label),
+              label: Text(_sourceLabel(l10n, source)),
               selected: _source == source,
               onSelected: enabled
                   ? (_) => setState(() => _source = source)
@@ -191,54 +199,54 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           }).toList(),
         ),
         if (_source == KernelSource.bundled)
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
             child: Text(
-              '内置 Python 即将推出（阶段⑥）',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              l10n.bundledComingSoon,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildFormSection() {
+  Widget _buildFormSection(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_source == KernelSource.remote) ...[
-          _buildLabel('服务器地址'),
+          _buildLabel(l10n.serverAddress),
           const SizedBox(height: 8),
           TextField(
             controller: _hostController,
-            decoration: const InputDecoration(
-              hintText: '例如 192.168.1.100 或 example.com',
-              prefixIcon: Icon(Icons.dns),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: l10n.serverAddressHint,
+              prefixIcon: const Icon(Icons.dns),
+              border: const OutlineInputBorder(),
             ),
             keyboardType: TextInputType.url,
           ),
           const SizedBox(height: 16),
         ],
-        _buildLabel('端口'),
+        _buildLabel(l10n.port),
         const SizedBox(height: 8),
         TextField(
           controller: _portController,
-          decoration: const InputDecoration(
-            hintText: '默认 8888',
-            prefixIcon: Icon(Icons.numbers),
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: l10n.portHint,
+            prefixIcon: const Icon(Icons.numbers),
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
         ),
         const SizedBox(height: 16),
-        _buildLabel('Token'),
+        _buildLabel(l10n.token),
         const SizedBox(height: 8),
         TextField(
           controller: _tokenController,
           obscureText: _obscureToken,
           decoration: InputDecoration(
-            hintText: 'jupyter_server 的 --NotebookApp.token',
+            hintText: l10n.tokenHint,
             prefixIcon: const Icon(Icons.key),
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
@@ -253,16 +261,17 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     );
   }
 
-  Widget _buildTermuxCard() {
+  Widget _buildTermuxCard(AppLocalizations l10n) {
     final deploy = _deploy;
     return Card(
       child: ExpansionTile(
         leading: const Icon(Icons.terminal),
-        title: const Text('Termux 服务部署'),
-        subtitle: const Text('配置与命令分离：写一次配置，日常只跑启动 / 停止'),
+        title: Text(l10n.termuxDeploy),
+        subtitle: Text(l10n.termuxDeploySubtitle),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
-          const Text('配置目录', style: TextStyle(fontWeight: FontWeight.w600)),
+          Text(l10n.configDir,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
           RadioGroup<TermuxConfigLocation>(
             groupValue: _configLocation,
             onChanged: (TermuxConfigLocation? v) {
@@ -273,31 +282,44 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 RadioListTile<TermuxConfigLocation>(
                   contentPadding: EdgeInsets.zero,
                   dense: true,
-                  title: const Text('Termux 私有目录 (~/.jupyter)'),
-                  subtitle: const Text('仅 Termux 可访问，其他 App 看不到'),
+                  title: Text(l10n.privateDir),
+                  subtitle: Text(l10n.privateDirDesc),
                   value: TermuxConfigLocation.private,
                 ),
                 RadioListTile<TermuxConfigLocation>(
                   contentPadding: EdgeInsets.zero,
                   dense: true,
-                  title: const Text('共享目录 (/sdcard/JupyterMobile)'),
-                  subtitle: const Text('文件管理器 / Shizuku 可直接读写（推荐）'),
+                  title: Text(l10n.sharedDir),
+                  subtitle: Text(l10n.sharedDirDesc),
                   value: TermuxConfigLocation.shared,
                 ),
               ],
             ),
           ),
           const Divider(),
-          _buildScriptBlock('① 首次安装（已装可跳过）', deploy.installScript()),
-          _buildScriptBlock('② 写入配置（一次性）', deploy.writeConfigScript()),
-          _buildScriptBlock('③ 启动服务', deploy.startScript()),
-          _buildScriptBlock('④ 停止服务', deploy.stopScript()),
+          _buildScriptBlock(l10n, l10n.stepInstall, deploy.installScript()),
+          _buildScriptBlock(l10n, l10n.stepConfig, deploy.writeConfigScript()),
+          _buildScriptBlock(l10n, l10n.stepStart, deploy.startScript()),
+          _buildScriptBlock(l10n, l10n.stepStop, deploy.stopScript()),
+          const Divider(),
+          Text(l10n.extensionServerTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(l10n.extensionServerDesc,
+              style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text(l10n.extensionReplaceName,
+              style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          _buildScriptBlock(
+              l10n, l10n.stepNbextension, deploy.nbextensionScript('<name>')),
+          _buildScriptBlock(l10n,
+              l10n.stepLabextension, deploy.labextensionScript('<name>')),
         ],
       ),
     );
   }
 
-  Widget _buildScriptBlock(String title, String script) {
+  Widget _buildScriptBlock(
+      AppLocalizations l10n, String title, String script) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -325,21 +347,74 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           child: TextButton.icon(
             onPressed: () => _copy(script),
             icon: const Icon(Icons.copy, size: 18),
-            label: const Text('复制'),
+            label: Text(l10n.copy),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAutoConnectSwitch() {
+  Widget _buildAutoConnectSwitch(AppLocalizations l10n) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      title: const Text('自动连接'),
-      subtitle: const Text('下次启动直接使用上次配置连接'),
+      title: Text(l10n.autoConnect),
+      subtitle: Text(l10n.autoConnectDesc),
       value: _autoConnect,
       onChanged: (v) => setState(() => _autoConnect = v),
     );
+  }
+
+  Widget _buildLanguageSection(AppLocalizations l10n) {
+    final current = _localePreference();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(child: Text(l10n.language)),
+            DropdownButton<LocalePreference>(
+              value: current,
+              underline: const SizedBox.shrink(),
+              items: [
+                DropdownMenuItem(
+                  value: LocalePreference.system,
+                  child: Text(l10n.languageSystem),
+                ),
+                DropdownMenuItem(
+                  value: LocalePreference.zh,
+                  child: Text(l10n.languageChinese),
+                ),
+                DropdownMenuItem(
+                  value: LocalePreference.en,
+                  child: Text(l10n.languageEnglish),
+                ),
+              ],
+              onChanged: (v) {
+                if (v != null) {
+                  ref.read(localeControllerProvider.notifier).setPreference(v);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  LocalePreference _localePreference() {
+    final locale = ref.watch(localeControllerProvider);
+    if (locale == null) return LocalePreference.system;
+    return LocalePreference.fromStorage(locale.languageCode);
+  }
+
+  String _sourceLabel(AppLocalizations l10n, KernelSource source) {
+    return switch (source) {
+      KernelSource.remote => l10n.sourceRemote,
+      KernelSource.external => l10n.sourceExternal,
+      KernelSource.bundled => l10n.sourceBundled,
+    };
   }
 
   Widget _buildError(String message) {

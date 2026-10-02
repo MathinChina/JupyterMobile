@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/notebook/notebook.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 /// 渲染单个 [CellOutput]，按 MIME 优先级选择最「丰富」的可渲染形式。
 ///
@@ -47,11 +48,11 @@ class CellOutputView extends StatelessWidget {
       return _HtmlView(html: data['text/html'].toString());
     }
     if (data['image/png'] != null) {
-      return _safeImage(() => base64Decode(data['image/png'].toString()),
+      return _safeImage(context, () => base64Decode(data['image/png'].toString()),
           gaplessPlayback: true);
     }
     if (data['image/jpeg'] != null) {
-      return _safeImage(() => base64Decode(data['image/jpeg'].toString()));
+      return _safeImage(context, () => base64Decode(data['image/jpeg'].toString()));
     }
     if (data['image/svg+xml'] != null) {
       return Padding(
@@ -76,7 +77,11 @@ class CellOutputView extends StatelessWidget {
     return _mono(prefix == null ? text : '$prefix$text');
   }
 
-  Widget _safeImage(List<int> Function() decode, {bool gaplessPlayback = false}) {
+  Widget _safeImage(
+    BuildContext context,
+    List<int> Function() decode, {
+    bool gaplessPlayback = false,
+  }) {
     try {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -84,11 +89,13 @@ class CellOutputView extends StatelessWidget {
           Uint8List.fromList(decode()),
           gaplessPlayback: gaplessPlayback,
           errorBuilder: (context, error, stack) =>
-              _mono('（图片无法显示）', color: Colors.grey),
+              _mono(AppLocalizations.of(context).imageUnavailable,
+                  color: Colors.grey),
         ),
       );
     } catch (_) {
-      return _mono('（图片数据无效）', color: Colors.grey);
+      return _mono(AppLocalizations.of(context).imageInvalid,
+          color: Colors.grey);
     }
   }
 
