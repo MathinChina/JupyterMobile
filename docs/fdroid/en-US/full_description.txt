@@ -1,0 +1,14 @@
+JupyterMobile lets you connect to, write and run Jupyter notebooks
+right on your Android device.
+
+Features:
+• Render, edit and execute notebooks (Markdown, Code and Raw cells)
+• Collapse/expand code cells
+• Built-in monospace font and ANSI escape cleanup for readable terminal output
+• Chinese and English interface
+• Rename notebooks and save as .ipynb
+• Manage external extensions (pip packages, nbextension, labextension)
+• Random or custom connection token
+
+It works with a Jupyter server running in Termux. A one-command
+deployment script is included to install and manage the server.

@@ -1,0 +1,35 @@
+Categories:
+  - Development
+  - Science & Education
+License: GPL-3.0-only
+AuthorName: MathinChina
+SourceCode: https://gitee.com/mathinchina/JupyterMobile
+IssueTracker: https://gitee.com/mathinchina/JupyterMobile/issues
+Changelog: https://gitee.com/mathinchina/JupyterMobile/releases
+
+AutoName: JupyterMobile
+Name: JupyterMobile
+
+RepoType: git
+Repo: https://gitee.com/mathinchina/JupyterMobile
+
+Builds:
+  - versionName: '1.1.0'
+    versionCode: 2
+    commit: v1.1.0
+    subdir: .
+    gradle:
+      - yes
+    srclibs:
+      - flutter@3.47.0
+    prebuild:
+      - sed -i '/flutter.sdk/d' android/local.properties || true
+    build:
+      - export PATH=$$flutter$$/bin:$PATH
+      - flutter pub get
+      - flutter build apk --release
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.1.0'
+CurrentVersionCode: 2
