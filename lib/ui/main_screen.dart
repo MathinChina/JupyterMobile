@@ -11,6 +11,8 @@ import '../core/kernel/kernel_connection.dart';
 import '../core/kernel/kernel_event.dart';
 import '../core/notebook/notebook.dart';
 import '../state/connection_providers.dart';
+import 'widgets/cell_output_view.dart';
+import 'widgets/code_highlight.dart';
 
 /// 主界面：notebook 渲染 / 编辑 / 执行。
 ///
@@ -32,10 +34,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int? _editingIndex;
   int? _runningIndex;
   String _fileName = '未命名.ipynb';
+  bool _markdownPreview = false;
 
   @override
   void initState() {
     super.initState();
+    _editController.addListener(_onEditChanged);
     _doc.cells.add(MarkdownCell(
       id: notebookNewId(),
       metadata: const {},
@@ -46,8 +50,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void dispose() {
     _execSub?.cancel();
+    _editController.removeListener(_onEditChanged);
     _editController.dispose();
     super.dispose();
+  }
+
+  void _onEditChanged() {
+    // markdown 实时预览时，输入变化触发重建。
+    if (_markdownPreview && mounted) setState(() {});
   }
 
   // ---- 文件操作 ----
@@ -143,9 +153,32 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
   }
 
+  void _moveCell(int index, int delta) {
+    final target = index + delta;
+    if (target < 0 || target >= _doc.cells.length) return;
+    setState(() {
+      final cell = _doc.cells.removeAt(index);
+      _doc.cells.insert(target, cell);
+      // 跟随正在编辑的 cell。
+      if (_editingIndex == index) {
+        _editingIndex = target;
+      } else if (_editingIndex != null) {
+        final e = _editingIndex!;
+        if (delta > 0 && e == target) {
+          _editingIndex = index;
+        } else if (delta < 0 && e == target) {
+          _editingIndex = index;
+        }
+      }
+    });
+  }
+
   void _startEdit(int index) {
     _editController.text = _doc.cells[index].source;
-    setState(() => _editingIndex = index);
+    setState(() {
+      _editingIndex = index;
+      _markdownPreview = false;
+    });
   }
 
   void _finishEdit() {
@@ -153,7 +186,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (index != null && index < _doc.cells.length) {
       _doc.cells[index].setSource(_editController.text);
     }
-    setState(() => _editingIndex = null);
+    setState(() {
+      _editingIndex = null;
+      _markdownPreview = false;
+    });
   }
 
   // ---- 执行 ----
@@ -381,6 +417,26 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               ),
             ),
           const Spacer(),
+          IconButton(
+            tooltip: '上移',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.arrow_upward, size: 18),
+            onPressed: index > 0 ? () => _moveCell(index, -1) : null,
+          ),
+          IconButton(
+            tooltip: '下移',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.arrow_downward, size: 18),
+            onPressed: index < _doc.cells.length - 1
+                ? () => _moveCell(index, 1)
+                : null,
+          ),
+          IconButton(
+            tooltip: '删除',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.delete_outline, size: 20),
+            onPressed: () => _deleteCell(index),
+          ),
           if (isCode)
             IconButton(
               tooltip: _runningIndex == index ? '中断' : '运行',
@@ -395,12 +451,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               onPressed: () =>
                   _runningIndex == index ? _interrupt() : _runCell(index),
             ),
-          IconButton(
-            tooltip: '删除',
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.delete_outline, size: 20),
-            onPressed: () => _deleteCell(index),
-          ),
         ],
       ),
     );
@@ -428,16 +478,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              child: SelectableText(
-                cell.source.isEmpty ? '（点击输入代码）' : cell.source,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  color: cell.source.isEmpty
-                      ? Colors.grey.shade400
-                      : Colors.black87,
-                ),
-              ),
+              child: cell.source.isEmpty
+                  ? Text(
+                      '（点击输入代码）',
+                      style: TextStyle(color: Colors.grey.shade400),
+                    )
+                  : SelectableText.rich(
+                      CodeHighlight.highlightCode(cell.source),
+                    ),
             ),
           ),
           if (cell.outputs.isNotEmpty) ...[
@@ -447,7 +495,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final output in cell.outputs) _renderOutput(output),
+                  for (final output in cell.outputs) CellOutputView(output: output),
                 ],
               ),
             ),
@@ -483,6 +531,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               isDense: true,
             ),
           ),
+          if (!isCode) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () =>
+                      setState(() => _markdownPreview = !_markdownPreview),
+                  icon: Icon(
+                    _markdownPreview ? Icons.edit : Icons.visibility,
+                    size: 18,
+                  ),
+                  label: Text(_markdownPreview ? '编辑' : '预览'),
+                ),
+                const Spacer(),
+              ],
+            ),
+            if (_markdownPreview) ...[
+              const Divider(),
+              MarkdownBody(data: _editController.text),
+            ],
+          ],
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
@@ -493,64 +562,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _renderOutput(CellOutput output) {
-    switch (output) {
-      case StreamOutput(:final name, :final text):
-        return _monoText(
-          text,
-          color: name == 'stderr' ? Colors.red.shade700 : Colors.black87,
-        );
-      case ExecuteResultOutput(:final data, :final executionCount):
-        return _renderData(data, prefix: 'Out[$executionCount]: ');
-      case DisplayDataOutput(:final data):
-        return _renderData(data);
-      case ErrorOutput(:final ename, :final evalue, :final traceback):
-        return _monoText(
-          traceback.isEmpty ? '$ename: $evalue' : traceback.join('\n'),
-          color: Colors.red.shade700,
-        );
-    }
-  }
-
-  Widget _renderData(Map<String, dynamic> data, {String? prefix}) {
-    if (data.containsKey('image/png')) {
-      try {
-        return Padding(
-          padding: const EdgeInsets.only(top: 4, bottom: 4),
-          child: Image.memory(base64Decode(data['image/png'].toString())),
-        );
-      } catch (_) {
-        // base64 解码失败则回退到文本。
-      }
-    }
-    final text = _pickText(data);
-    return _monoText(prefix == null ? text : '$prefix$text');
-  }
-
-  String _pickText(Map<String, dynamic> data) {
-    for (final key in const ['text/plain', 'text/markdown', 'text/html']) {
-      final value = data[key];
-      if (value != null && value.toString().isNotEmpty) {
-        return value.toString();
-      }
-    }
-    return data.toString();
-  }
-
-  Widget _monoText(String text, {Color color = Colors.black87}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: SelectableText(
-        text.isEmpty ? ' ' : text,
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: color,
-        ),
       ),
     );
   }
